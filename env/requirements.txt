@@ -1,0 +1,9 @@
+torch
+torchvision
+torchaudio
+numpy
+scipy
+grpcio
+grpcio-tools
+flask
+flask-socketio
