@@ -2,9 +2,25 @@ syntax = "proto3";
 
 package motion;
 
-// Simple text -> motion service returning a BVH (or JSON) payload.
-service MotionGen {
+option csharp_namespace = "Motion";
+
+service MotionService {
+  // Sanity check
+  rpc Ping (Empty) returns (PingResponse);
+
+  // TESTING: Prove round trip
+  rpc GetDummyBVH (Empty) returns (MotionReply);
+
+  // TODO: Later, generate and serve actual BVH
   rpc Generate (GenerateRequest) returns (GenerateReply);
+}
+
+message Empty {}
+
+message PingResponse {
+  string version = 1;
+  bool cuda_available = 2;
+  string device_name = 3;
 }
 
 message GenerateRequest {
@@ -17,21 +33,14 @@ enum MotionFormat {
 }
 
 message GenerateReply {
+  MotionFormat format = 1;
+  bytes data = 2;
+  string meta = 3;
+}
+
+message MotionReply {
   MotionFormat format = 1;  // BVH or JSON
   bytes data = 2;           // Raw file bytes (BVH text or JSON)
   string meta = 3;          // Optional: fps, skeleton profile, etc.
-}
-
-// TESTING
-
-service MotionService {
-  rpc Ping (Empty) returns (PingResponse);
-}
-
-message Empty {}
-
-message PingResponse {
-  string version = 1;
-  bool cuda_available = 2;
-  string device_name = 3;
+  string filename = 4;     // suggested filename
 }

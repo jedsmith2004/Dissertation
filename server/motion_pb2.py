@@ -24,25 +24,25 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cmotion.proto\x12\x06motion\"!\n\x0fGenerateRequest\x12\x0e\n\x06prompt\x18\x01 \x01(\t\"Q\n\rGenerateReply\x12$\n\x06\x66ormat\x18\x01 \x01(\x0e\x32\x14.motion.MotionFormat\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\x12\x0c\n\x04meta\x18\x03 \x01(\t\"\x07\n\x05\x45mpty\"L\n\x0cPingResponse\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\x16\n\x0e\x63uda_available\x18\x02 \x01(\x08\x12\x13\n\x0b\x64\x65vice_name\x18\x03 \x01(\t*!\n\x0cMotionFormat\x12\x07\n\x03\x42VH\x10\x00\x12\x08\n\x04JSON\x10\x01\x32G\n\tMotionGen\x12:\n\x08Generate\x12\x17.motion.GenerateRequest\x1a\x15.motion.GenerateReply2<\n\rMotionService\x12+\n\x04Ping\x12\r.motion.Empty\x1a\x14.motion.PingResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cmotion.proto\x12\x06motion\"\x07\n\x05\x45mpty\"L\n\x0cPingResponse\x12\x0f\n\x07version\x18\x01 \x01(\t\x12\x16\n\x0e\x63uda_available\x18\x02 \x01(\x08\x12\x13\n\x0b\x64\x65vice_name\x18\x03 \x01(\t\"!\n\x0fGenerateRequest\x12\x0e\n\x06prompt\x18\x01 \x01(\t\"Q\n\rGenerateReply\x12$\n\x06\x66ormat\x18\x01 \x01(\x0e\x32\x14.motion.MotionFormat\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\x12\x0c\n\x04meta\x18\x03 \x01(\t\"a\n\x0bMotionReply\x12$\n\x06\x66ormat\x18\x01 \x01(\x0e\x32\x14.motion.MotionFormat\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\x12\x0c\n\x04meta\x18\x03 \x01(\t\x12\x10\n\x08\x66ilename\x18\x04 \x01(\t*!\n\x0cMotionFormat\x12\x07\n\x03\x42VH\x10\x00\x12\x08\n\x04JSON\x10\x01\x32\xab\x01\n\rMotionService\x12+\n\x04Ping\x12\r.motion.Empty\x1a\x14.motion.PingResponse\x12\x31\n\x0bGetDummyBVH\x12\r.motion.Empty\x1a\x13.motion.MotionReply\x12:\n\x08Generate\x12\x17.motion.GenerateRequest\x1a\x15.motion.GenerateReplyb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'motion_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_MOTIONFORMAT']._serialized_start=229
-  _globals['_MOTIONFORMAT']._serialized_end=262
-  _globals['_GENERATEREQUEST']._serialized_start=24
-  _globals['_GENERATEREQUEST']._serialized_end=57
-  _globals['_GENERATEREPLY']._serialized_start=59
-  _globals['_GENERATEREPLY']._serialized_end=140
-  _globals['_EMPTY']._serialized_start=142
-  _globals['_EMPTY']._serialized_end=149
-  _globals['_PINGRESPONSE']._serialized_start=151
-  _globals['_PINGRESPONSE']._serialized_end=227
-  _globals['_MOTIONGEN']._serialized_start=264
-  _globals['_MOTIONGEN']._serialized_end=335
-  _globals['_MOTIONSERVICE']._serialized_start=337
-  _globals['_MOTIONSERVICE']._serialized_end=397
+  _globals['_MOTIONFORMAT']._serialized_start=328
+  _globals['_MOTIONFORMAT']._serialized_end=361
+  _globals['_EMPTY']._serialized_start=24
+  _globals['_EMPTY']._serialized_end=31
+  _globals['_PINGRESPONSE']._serialized_start=33
+  _globals['_PINGRESPONSE']._serialized_end=109
+  _globals['_GENERATEREQUEST']._serialized_start=111
+  _globals['_GENERATEREQUEST']._serialized_end=144
+  _globals['_GENERATEREPLY']._serialized_start=146
+  _globals['_GENERATEREPLY']._serialized_end=227
+  _globals['_MOTIONREPLY']._serialized_start=229
+  _globals['_MOTIONREPLY']._serialized_end=326
+  _globals['_MOTIONSERVICE']._serialized_start=364
+  _globals['_MOTIONSERVICE']._serialized_end=535
 # @@protoc_insertion_point(module_scope)

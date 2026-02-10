@@ -25,85 +25,8 @@ if _version_not_supported:
     )
 
 
-class MotionGenStub(object):
-    """Simple text -> motion service returning a BVH (or JSON) payload.
-    """
-
-    def __init__(self, channel):
-        """Constructor.
-
-        Args:
-            channel: A grpc.Channel.
-        """
-        self.Generate = channel.unary_unary(
-                '/motion.MotionGen/Generate',
-                request_serializer=motion__pb2.GenerateRequest.SerializeToString,
-                response_deserializer=motion__pb2.GenerateReply.FromString,
-                _registered_method=True)
-
-
-class MotionGenServicer(object):
-    """Simple text -> motion service returning a BVH (or JSON) payload.
-    """
-
-    def Generate(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-
-def add_MotionGenServicer_to_server(servicer, server):
-    rpc_method_handlers = {
-            'Generate': grpc.unary_unary_rpc_method_handler(
-                    servicer.Generate,
-                    request_deserializer=motion__pb2.GenerateRequest.FromString,
-                    response_serializer=motion__pb2.GenerateReply.SerializeToString,
-            ),
-    }
-    generic_handler = grpc.method_handlers_generic_handler(
-            'motion.MotionGen', rpc_method_handlers)
-    server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('motion.MotionGen', rpc_method_handlers)
-
-
- # This class is part of an EXPERIMENTAL API.
-class MotionGen(object):
-    """Simple text -> motion service returning a BVH (or JSON) payload.
-    """
-
-    @staticmethod
-    def Generate(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/motion.MotionGen/Generate',
-            motion__pb2.GenerateRequest.SerializeToString,
-            motion__pb2.GenerateReply.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-
 class MotionServiceStub(object):
-    """TESTING
-
-    """
+    """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
         """Constructor.
@@ -116,15 +39,38 @@ class MotionServiceStub(object):
                 request_serializer=motion__pb2.Empty.SerializeToString,
                 response_deserializer=motion__pb2.PingResponse.FromString,
                 _registered_method=True)
+        self.GetDummyBVH = channel.unary_unary(
+                '/motion.MotionService/GetDummyBVH',
+                request_serializer=motion__pb2.Empty.SerializeToString,
+                response_deserializer=motion__pb2.MotionReply.FromString,
+                _registered_method=True)
+        self.Generate = channel.unary_unary(
+                '/motion.MotionService/Generate',
+                request_serializer=motion__pb2.GenerateRequest.SerializeToString,
+                response_deserializer=motion__pb2.GenerateReply.FromString,
+                _registered_method=True)
 
 
 class MotionServiceServicer(object):
-    """TESTING
-
-    """
+    """Missing associated documentation comment in .proto file."""
 
     def Ping(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Sanity check
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetDummyBVH(self, request, context):
+        """TESTING: Prove round trip
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Generate(self, request, context):
+        """TODO: Later, generate and serve actual BVH
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -137,6 +83,16 @@ def add_MotionServiceServicer_to_server(servicer, server):
                     request_deserializer=motion__pb2.Empty.FromString,
                     response_serializer=motion__pb2.PingResponse.SerializeToString,
             ),
+            'GetDummyBVH': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetDummyBVH,
+                    request_deserializer=motion__pb2.Empty.FromString,
+                    response_serializer=motion__pb2.MotionReply.SerializeToString,
+            ),
+            'Generate': grpc.unary_unary_rpc_method_handler(
+                    servicer.Generate,
+                    request_deserializer=motion__pb2.GenerateRequest.FromString,
+                    response_serializer=motion__pb2.GenerateReply.SerializeToString,
+            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
             'motion.MotionService', rpc_method_handlers)
@@ -146,9 +102,7 @@ def add_MotionServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class MotionService(object):
-    """TESTING
-
-    """
+    """Missing associated documentation comment in .proto file."""
 
     @staticmethod
     def Ping(request,
@@ -167,6 +121,60 @@ class MotionService(object):
             '/motion.MotionService/Ping',
             motion__pb2.Empty.SerializeToString,
             motion__pb2.PingResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetDummyBVH(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/motion.MotionService/GetDummyBVH',
+            motion__pb2.Empty.SerializeToString,
+            motion__pb2.MotionReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Generate(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/motion.MotionService/Generate',
+            motion__pb2.GenerateRequest.SerializeToString,
+            motion__pb2.GenerateReply.FromString,
             options,
             channel_credentials,
             insecure,

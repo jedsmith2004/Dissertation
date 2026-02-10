@@ -3,16 +3,6 @@ from concurrent import futures
 import torch
 import motion_pb2, motion_pb2_grpc
 from dummy_bvh import DUMMY_BVH
-
-class MotionGenService(motion_pb2_grpc.MotionGenServicer):
-    def Generate(self, request, context):
-        print(f"[MotionGen] Prompt received: {request.prompt!r}")
-        reply = motion_pb2.GenerateReply(
-            format=motion_pb2.BVH,
-            data=DUMMY_BVH.encode("utf-8"),
-            meta='{"fps":30,"skeleton":"minimal"}'
-        )
-        return reply
     
 class MotionService(motion_pb2_grpc.MotionServiceServicer):
     def Ping(self, request, context):
@@ -26,12 +16,25 @@ class MotionService(motion_pb2_grpc.MotionServiceServicer):
             cuda_available=cuda_available,
             device_name=device_name
         )
+    
+    def GetDummyBVH(self, request, context):
+        bvh_text = DUMMY_BVH
+        return motion_pb2.MotionReply(
+            format=motion_pb2.BVH,
+            data=bvh_text.encode("utf-8"),
+            meta="fps=30",
+            filename="dummy.bvh"
+        )
+    
+    def Generate(self, request, context):
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Generate not implemented yet")
+        return motion_pb2.GenerateReply()
 
 def serve(port: int = 50051):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
 
     motion_pb2_grpc.add_MotionServiceServicer_to_server(MotionService(), server)
-    motion_pb2_grpc.add_MotionGenServicer_to_server(MotionGenService(), server)
     
     server.add_insecure_port(f"[::]:{port}")
     server.start()
