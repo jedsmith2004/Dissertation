@@ -1,0 +1,8 @@
+{
+  "name": "com.jacksmith.smart-motion-editing",
+  "displayName": "Smart Motion Editing",
+  "version": "0.1.0",
+  "unity": "6000.2",
+  "description": "Keyframe and physics-based control for AI-generated animation in Unity.",
+  "author": "Jack Smith"
+}

@@ -1,0 +1,21 @@
+DUMMY_BVH = """HIERARCHY
+ROOT Hips
+{
+  OFFSET 0.00 0.00 0.00
+  CHANNELS 6 Xposition Yposition Zposition Zrotation Xrotation Yrotation
+  JOINT Chest
+  {
+    OFFSET 0.00 10.00 0.00
+    CHANNELS 3 Zrotation Xrotation Yrotation
+    End Site
+    {
+      OFFSET 0.00 10.00 0.00
+    }
+  }
+}
+MOTION
+Frames: 2
+Frame Time: 0.0333333
+0 0 0 0 0 0  0 0 0
+0 0 0 0 10 0  0 0 0
+"""
