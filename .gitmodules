@@ -1,0 +1,6 @@
+[submodule "motion-backend/models/T2M-GPT"]
+	path = motion-backend/models/T2M-GPT
+	url = https://github.com/jedsmith2004/T2M-GPT.git
+[submodule "motion-backend/models/MoMask"]
+	path = motion-backend/models/MoMask
+	url = https://github.com/EricGuo5513/momask-codes.git
