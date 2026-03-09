@@ -218,9 +218,65 @@ A MonoBehaviour that plays generated motion at runtime on any Humanoid character
 
 - **Unity 6000.2** or later
 - **Python 3.10+** with CUDA-capable GPU (recommended) or CPU
-- **T2M-GPT model checkpoints** (VQ-VAE + Transformer)
+- **T2M-GPT model checkpoints** — downloaded separately (see below)
 
-### Backend Setup
+### 1. Clone the Repository
+
+```bash
+git clone --recurse-submodules https://github.com/jedsmith2004/Dissertation.git
+cd Dissertation
+```
+
+If you already cloned without `--recurse-submodules`:
+```bash
+git submodule update --init --recursive
+```
+
+### 2. Download Model Checkpoints (not in git — too large)
+
+The pretrained weights (~1 GB) are too large for GitHub and must be downloaded separately. They go into `motion-backend/models/T2M-GPT/pretrained/`.
+
+**Option A — Use the official download script (requires `gdown`):**
+```bash
+pip install gdown
+cd motion-backend/models/T2M-GPT
+bash dataset/prepare/download_model.sh
+```
+This downloads and unzips the checkpoints into:
+```
+motion-backend/models/T2M-GPT/pretrained/
+├── VQVAE/
+│   ├── net_last.pth          (75 MB)  ← VQ-VAE checkpoint
+│   └── net_best_fid.pth      (75 MB)
+└── VQTransformer_corruption05/
+    └── net_best_fid.pth      (872 MB) ← GPT Transformer checkpoint
+```
+
+**Option B — Manual download:**
+
+Download `VQTrans_pretrained.zip` from [Google Drive](https://drive.google.com/file/d/1LaOvwypF-jM2Axnq5dc-Iuvv3w_G-WDE) and unzip it into `motion-backend/models/T2M-GPT/pretrained/`.
+
+**Option C — Copy from another machine:**
+
+If you already have the checkpoints on another machine, copy the entire `pretrained/` folder:
+```
+motion-backend/models/T2M-GPT/pretrained/
+```
+
+### 3. Download HumanML3D Data (normalization stats)
+
+The inference pipeline needs `Mean.npy` and `Std.npy` from the HumanML3D dataset. These are auto-discovered from several locations. If they're not already present:
+
+```bash
+cd motion-backend/models/T2M-GPT
+mkdir -p dataset/HumanML3D
+```
+
+Then place `Mean.npy` and `Std.npy` in `dataset/HumanML3D/`. These can be obtained from the [HumanML3D dataset](https://github.com/EricGuo5513/HumanML3D).
+
+> **Note:** The server auto-searches for these files in `dataset/HumanML3D/`, `checkpoints/t2m/*/meta/`, and other common locations. If you have the full T2M-GPT checkpoints directory, they may already be present there.
+
+### 4. Backend Setup
 
 ```bash
 cd motion-backend
@@ -234,21 +290,18 @@ source venv/bin/activate  # Linux/Mac
 pip install -r env/requirements.txt
 pip install git+https://github.com/openai/CLIP.git
 
-# Initialise model submodules
-git submodule update --init --recursive
-
-# Set checkpoint paths
+# Set checkpoint paths (adjust if your paths differ)
 export T2MGPT_VQ_CKPT="models/T2M-GPT/pretrained/VQVAE/net_last.pth"
 export T2MGPT_TRANS_CKPT="models/T2M-GPT/pretrained/VQTransformer_corruption05/net_best_fid.pth"
 
-# Start the server
-cd models/T2M-GPT  # CWD must be here for model imports
+# Start the server (CWD must be inside T2M-GPT for model imports)
+cd models/T2M-GPT
 python -m server.app
 ```
 
 The server will listen on `localhost:50051`.
 
-### Unity Setup
+### 5. Unity Setup
 
 1. Open the `Dissertation Plugin Playground/` folder in Unity 6000.2+.
 2. Unity will regenerate the `Library/` folder on first open (this takes a few minutes).
