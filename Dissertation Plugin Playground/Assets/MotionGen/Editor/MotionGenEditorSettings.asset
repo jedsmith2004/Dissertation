@@ -16,7 +16,7 @@ MonoBehaviour:
   fps: 30
   durationSeconds: 2
   seed: 0
-  format: 1
-  exportSmplSidecar: 1
+  format: 0
+  exportSmplSidecar: 0
   useRetargetCalibration: 1
   retargetCalibration: []

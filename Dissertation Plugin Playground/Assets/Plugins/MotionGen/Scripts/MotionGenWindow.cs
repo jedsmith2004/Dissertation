@@ -1019,9 +1019,9 @@ public class MotionGenWindow : EditorWindow
             var rootPath = AnimationUtility.CalculateTransformPath(_selectedAnimator.transform, _selectedAnimator.transform);
 
             // Negate Z to match the right-hand → left-hand conversion applied to joints.
-            SetCurveFromFramesSmoothed(clip, rootPath, "m_LocalPosition.x", motion.frames, frameTime, f => f.position.x, 3);
-            SetCurveFromFramesSmoothed(clip, rootPath, "m_LocalPosition.y", motion.frames, frameTime, f => f.position.y, 3);
-            SetCurveFromFramesSmoothed(clip, rootPath, "m_LocalPosition.z", motion.frames, frameTime, f => -f.position.z, 3);
+            SetCurveFromFrames(clip, rootPath, "m_LocalPosition.x", motion.frames, frameTime, f => f.position.x);
+            SetCurveFromFrames(clip, rootPath, "m_LocalPosition.y", motion.frames, frameTime, f => f.position.y);
+            SetCurveFromFrames(clip, rootPath, "m_LocalPosition.z", motion.frames, frameTime, f => -f.position.z);
 
             var usedFullJointSolve = TrySetFullBodyRotationCurvesFromJoints(clip, motion, frameTime);
             if (!usedFullJointSolve)
@@ -1127,19 +1127,13 @@ public class MotionGenWindow : EditorWindow
             if (bindDir.sqrMagnitude < 1e-8f)
                 continue;
 
-            Quaternion dirCorrection = Quaternion.identity;
-            if (_settings.useRetargetCalibration && _settings.TryGetCalibration(map.bone, out var stored))
-            {
-                dirCorrection = stored;
-            }
-
             solvedBones.Add(new SolvedBone
             {
                 map = map,
                 transform = bone,
                 bindLocalRotation = bone.localRotation,
                 bindLocalDirection = bone.InverseTransformDirection(bindDir).normalized,
-                directionCorrection = dirCorrection,
+                directionCorrection = Quaternion.identity,
                 path = AnimationUtility.CalculateTransformPath(bone, _selectedAnimator.transform),
                 rotX = new AnimationCurve(),
                 rotY = new AnimationCurve(),
@@ -1203,11 +1197,8 @@ public class MotionGenWindow : EditorWindow
                         else
                             targetLocal = targetWorldRot;
 
-                        // Light temporal smoothing to reduce jitter while preserving motion.
-                        var blended = Quaternion.Slerp(b.prevLocalRotation, targetLocal, 0.85f);
-
-                        b.transform.localRotation = blended;
-                        b.prevLocalRotation = blended;
+                        b.transform.localRotation = targetLocal;
+                        b.prevLocalRotation = targetLocal;
                     }
 
                     var q = b.transform.localRotation;
@@ -1226,19 +1217,12 @@ public class MotionGenWindow : EditorWindow
                     }
                 }
 
-                // IK refinement once per frame (after all directional solves).
-                ApplyTwoBoneIKRefinement(joints, i, HumanBodyBones.RightUpperLeg, HumanBodyBones.RightLowerLeg, HumanBodyBones.RightFoot, 7);
-                ApplyTwoBoneIKRefinement(joints, i, HumanBodyBones.LeftUpperLeg, HumanBodyBones.LeftLowerLeg, HumanBodyBones.LeftFoot, 8);
-                ApplyTwoBoneIKRefinement(joints, i, HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand, 21);
-                ApplyTwoBoneIKRefinement(joints, i, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, 20);
-
                 if (useHumanoidCurves)
                 {
                     poseHandler.GetHumanPose(ref pose);
                     for (int m = 0; m < HumanTrait.MuscleCount; m++)
                     {
-                        var v = Mathf.Clamp(pose.muscles[m], -1f, 1f) * RetargetMuscleScale;
-                        muscleCurves[m].AddKey(time, v);
+                        muscleCurves[m].AddKey(time, pose.muscles[m]);
                     }
                 }
             }

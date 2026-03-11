@@ -3,6 +3,11 @@ import json
 import grpc
 from concurrent import futures
 import torch
+from dotenv import load_dotenv
+
+# Load .env from the project root (one level up from server/)
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
+
 import motion_pb2, motion_pb2_grpc
 from dummy_bvh import DUMMY_BVH
 from t2mgpt_runtime import T2MGPTGenerator

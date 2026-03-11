@@ -81,7 +81,12 @@ def rotmat_to_euler_zyx(R: np.ndarray) -> np.ndarray:
     """Convert a batch of 3×3 rotation matrices to ZYX-intrinsic Euler angles (degrees).
 
     BVH convention:  Zrotation  Yrotation  Xrotation
-    (intrinsic ZYX = extrinsic XYZ)
+    The rotation matrix is  R = Rz(z) · Ry(y) · Rx(x).
+
+    From this product the relevant matrix elements are:
+        R[2,0] = -sin(y)
+        R[1,0] =  sin(z)·cos(y)     R[0,0] = cos(z)·cos(y)
+        R[2,1] =  cos(y)·sin(x)     R[2,2] = cos(y)·cos(x)
 
     Parameters
     ----------
@@ -91,17 +96,18 @@ def rotmat_to_euler_zyx(R: np.ndarray) -> np.ndarray:
     -------
     np.ndarray, shape (..., 3) — angles in degrees, order [Z, Y, X].
     """
-    # Clamp to avoid NaN from asin.
-    sy = np.clip(R[..., 0, 2], -1.0, 1.0)
+    # sin(y) = -R[2,0]  for  R = Rz·Ry·Rx
+    sy = np.clip(-R[..., 2, 0], -1.0, 1.0)
     y = np.arcsin(sy)
 
     # Check for gimbal lock (|cos(y)| ≈ 0).
     cy = np.cos(y)
     gimbal = np.abs(cy) < 1e-6
 
-    # Normal case.
-    z = np.where(gimbal, np.float64(0.0), np.arctan2(-R[..., 0, 1], R[..., 0, 0]))
-    x = np.where(gimbal, np.arctan2(-R[..., 1, 2], R[..., 1, 1]), np.arctan2(-R[..., 1, 2], R[..., 2, 2]))
+    # Normal case:  z = atan2(R[1,0], R[0,0]),  x = atan2(R[2,1], R[2,2])
+    # Gimbal lock:  set z = 0,  x = atan2(-R[1,2], R[1,1])
+    z = np.where(gimbal, np.float64(0.0), np.arctan2(R[..., 1, 0], R[..., 0, 0]))
+    x = np.where(gimbal, np.arctan2(-R[..., 1, 2], R[..., 1, 1]), np.arctan2(R[..., 2, 1], R[..., 2, 2]))
 
     return np.degrees(np.stack([z, y, x], axis=-1))
 

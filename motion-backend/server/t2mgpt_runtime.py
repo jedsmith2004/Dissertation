@@ -161,45 +161,6 @@ class T2MGPTGenerator:
             out[:, i] = np.interp(new_x, old_x, values[:, i])
         return out
 
-    @staticmethod
-    def _stabilize_motion_scale(root_pos: np.ndarray, joints: np.ndarray, fps: int) -> tuple[np.ndarray, np.ndarray]:
-        """Scale/center motion to human-friendly units and limit implausible drift."""
-        if len(root_pos) == 0 or len(joints) == 0:
-            return root_pos, joints
-
-        root = root_pos.astype(np.float32).copy()
-        j = joints.astype(np.float32).copy()
-
-        # Center trajectory at origin.
-        root -= root[0]
-        j -= root_pos[0][None, None, :]
-
-        # Height-based scaling using hip(0)->head(15) distance.
-        hip = j[:, 0, :]
-        head = j[:, 15, :]
-        torso_h = np.linalg.norm(head - hip, axis=1)
-        torso_h = torso_h[np.isfinite(torso_h)]
-        median_h = float(np.median(torso_h)) if torso_h.size > 0 else 1.0
-        target_h = 0.9
-        height_scale = target_h / max(0.1, median_h)
-
-        # Locomotion speed scaling (XZ). Limit to roughly brisk walk/jog.
-        dt = 1.0 / max(1, fps)
-        dxz = np.diff(root[:, [0, 2]], axis=0)
-        speed = np.linalg.norm(dxz, axis=1) / max(1e-5, dt)
-        speed95 = float(np.percentile(speed, 95)) if speed.size > 0 else 0.0
-        max_speed = 3.0
-        speed_scale = min(1.0, max_speed / max(1e-3, speed95)) if speed95 > 0 else 1.0
-
-        scale = min(height_scale, speed_scale)
-        root *= scale
-        j *= scale
-
-        # Keep ground contact more stable by anchoring root y at 0.
-        root[:, 1] -= root[0, 1]
-
-        return root, j
-
     @torch.no_grad()
     def generate_json(self, prompt: str, fps: int, duration_seconds: float, seed: int):
         self._load()
@@ -245,16 +206,6 @@ class T2MGPTGenerator:
         # Centre XZ at origin (frame 0 starts at 0).
         root_traj[:, 0] -= root_traj[0, 0]
         root_traj[:, 2] -= root_traj[0, 2]
-
-        # Cap excessive XZ speed to prevent floating / sliding.
-        native_fps = 20  # T2M-GPT native framerate
-        if len(root_traj) > 1:
-            dxz = np.diff(root_traj[:, [0, 2]], axis=0)
-            per_frame_speed = np.linalg.norm(dxz, axis=1) / (1.0 / native_fps)
-            p95 = float(np.percentile(per_frame_speed, 95))
-            max_speed = 1.5  # m/s – normal walking pace
-            if p95 > max_speed:
-                root_traj[:, [0, 2]] *= max_speed / p95
 
         root_traj = root_traj.astype(np.float32)
         local_joints = local_joints.astype(np.float32)
@@ -399,39 +350,16 @@ class T2MGPTGenerator:
         offsets = skeleton._offset.numpy().copy()  # (22, 3)
         offsets[0] = [0.0, 0.0, 0.0]  # root offset in BVH = origin
 
-        # ── 6. Prepare root world position ──
+        # ── 6. Root position — raw model output, no post-processing ──
         root_pos = r_pos.copy()  # (T, 3)
-        root_pos[:, 0] -= root_pos[0, 0]
-        root_pos[:, 2] -= root_pos[0, 2]
-        # Ground feet.
-        joint_xyz[:, 0, 1] = (joint_xyz[:, 1, 1] + joint_xyz[:, 2, 1]) / 2.0
-        foot_y = min(float(joint_xyz[0, 10, 1]), float(joint_xyz[0, 11, 1]))
-        root_pos[:, 1] -= foot_y
 
-        # ── 7. Resample to requested FPS / duration ──
-        target_frames = max(2, int(max(0.1, duration_seconds) * max(1, fps)))
-
-        root_pos_rs = self._resample(root_pos.astype(np.float32), target_frames)
-
-        # Resample rotation matrices then re-orthonormalize via SVD.
-        rotmats_flat = local_rotmats.reshape(T, 22 * 9)
-        rotmats_flat_rs = self._resample(rotmats_flat.astype(np.float32), target_frames)
-        rotmats_rs = rotmats_flat_rs.reshape(target_frames, 22, 3, 3)
-
-        for fi in range(target_frames):
-            for ji in range(22):
-                U, _, Vt = np.linalg.svd(rotmats_rs[fi, ji])
-                det = np.linalg.det(U @ Vt)
-                if det < 0:
-                    U[:, -1] *= -1
-                rotmats_rs[fi, ji] = U @ Vt
-
-        # ── 8. Write BVH ──
+        # ── 7. Write BVH at model's native frame rate (20 fps) ──
+        native_fps = 20.0
         bvh_text = write_bvh(
-            root_positions=root_pos_rs,
-            local_rotmats=rotmats_rs,
+            root_positions=root_pos.astype(np.float32),
+            local_rotmats=local_rotmats,
             offsets=offsets,
-            fps=float(fps),
+            fps=native_fps,
         )
 
         payload = bvh_text.encode("utf-8")

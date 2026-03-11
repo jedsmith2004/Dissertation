@@ -53,7 +53,7 @@ public class MotionGenEditorSettings : ScriptableObject
     public int fps = 30;
     public float durationSeconds = 2.0f;
     public int seed = 0;
-    public MotionFormat format = MotionFormat.JSON;
+    public MotionFormat format = MotionFormat.BVH;
     public bool exportSmplSidecar = true;
     public bool useRetargetCalibration = true;
     public List<BoneCalibrationEntry> retargetCalibration = new List<BoneCalibrationEntry>();
