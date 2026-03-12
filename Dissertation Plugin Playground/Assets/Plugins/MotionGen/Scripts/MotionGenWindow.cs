@@ -14,6 +14,7 @@ using UnityEngine;
 public class MotionGenWindow : EditorWindow
 {
     private const string GeneratedRoot = "Assets/MotionGen/Generated";
+    private const string CanonicalSchema = "motiongen-canonical-v1";
     private const bool AutoOpenAnimationWindowOnEnable = false;
     private const bool ModifyEditorSelection = false;
     private const float RetargetMuscleScale = 1.0f;
@@ -29,9 +30,16 @@ public class MotionGenWindow : EditorWindow
     private string _generateStatus = "Idle";
     private bool _autoApplyOnGenerate = true;
     private string _lastGeneratedClipAssetPath;
+    private string _lastGeneratedSourceAssetPath;
     private bool _isPreviewPlaying;
     private bool _loopPreview = true;
     private double _lastPreviewEditorTime;
+    private bool _hasPreviewRootReference;
+    private int _previewRootClipInstanceId;
+    private Vector3 _previewRootBaseLocalPosition;
+    private Quaternion _previewRootBaseLocalRotation;
+    private Vector3 _previewClipRootStartPosition;
+    private Quaternion _previewClipRootStartRotation;
 
     [MenuItem("Window/MotionGen")]
     public static void ShowWindow()
@@ -75,6 +83,12 @@ public class MotionGenWindow : EditorWindow
         _selectedAnimator = null;
         _activeClip = null;
         _currentPreviewTime = 0f;
+        _hasPreviewRootReference = false;
+        _previewRootClipInstanceId = 0;
+        _previewRootBaseLocalPosition = Vector3.zero;
+        _previewRootBaseLocalRotation = Quaternion.identity;
+        _previewClipRootStartPosition = Vector3.zero;
+        _previewClipRootStartRotation = Quaternion.identity;
 
         if (Selection.activeGameObject != null)
         {
@@ -147,6 +161,9 @@ public class MotionGenWindow : EditorWindow
 
         EditorGUILayout.Space();
         _settings.useRetargetCalibration = EditorGUILayout.ToggleLeft("Use Retarget Calibration", _settings.useRetargetCalibration);
+        _settings.canonicalRetargetExperimentMode = (MotionGenEditorSettings.CanonicalRetargetExperimentMode)EditorGUILayout.EnumPopup(
+            "Canonical Retarget Experiment",
+            _settings.canonicalRetargetExperimentMode);
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("Capture T-Pose Calibration"))
         {
@@ -535,19 +552,12 @@ public class MotionGenWindow : EditorWindow
         if (_selectedAnimator == null || clip == null)
             return;
 
-        var controller = _selectedAnimator.runtimeAnimatorController as AnimatorController;
+        var controller = GetOrCreateDedicatedMotionGenController();
         if (controller == null)
-        {
-            var controllerPath = $"{GeneratedRoot}/{_selectedAnimator.name}_MotionGen.controller";
-            controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
+            return;
 
-            if (controller == null)
-            {
-                controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
-            }
-
+        if (_selectedAnimator.runtimeAnimatorController != controller)
             _selectedAnimator.runtimeAnimatorController = controller;
-        }
 
         if (controller.layers == null || controller.layers.Length == 0)
             return;
@@ -557,15 +567,55 @@ public class MotionGenWindow : EditorWindow
         if (state == null)
             state = sm.AddState("MotionGen");
 
-        // Do not continuously overwrite generated clips every GUI repaint.
-        if (state.motion == null)
-            state.motion = clip;
-
-        if (sm.defaultState == null)
-            sm.defaultState = state;
+        state.motion = clip;
+        sm.defaultState = state;
 
         EditorUtility.SetDirty(controller);
         AssetDatabase.SaveAssets();
+    }
+
+    private AnimatorController GetOrCreateDedicatedMotionGenController()
+    {
+        if (_selectedAnimator == null)
+            return null;
+
+        var controllerPath = $"{GeneratedRoot}/{_selectedAnimator.name}_MotionGen.controller";
+        var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath);
+        if (controller == null)
+            controller = AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
+
+        if (controller == null || controller.layers == null || controller.layers.Length == 0)
+            return controller;
+
+        var layer = controller.layers[0];
+        layer.name = "Base Layer";
+        layer.defaultWeight = 1f;
+        layer.avatarMask = null;
+        layer.blendingMode = AnimatorLayerBlendingMode.Override;
+
+        var sm = layer.stateMachine;
+        foreach (var childState in sm.states)
+        {
+            if (childState.state != null && childState.state.name != "MotionGen")
+                sm.RemoveState(childState.state);
+        }
+
+        foreach (var transition in sm.anyStateTransitions.ToArray())
+            sm.RemoveAnyStateTransition(transition);
+
+        foreach (var childState in sm.states)
+        {
+            if (childState.state == null)
+                continue;
+
+            foreach (var transition in childState.state.transitions.ToArray())
+                childState.state.RemoveTransition(transition);
+        }
+
+        controller.layers[0] = layer;
+        EditorUtility.SetDirty(controller);
+        AssetDatabase.SaveAssets();
+        return controller;
     }
 
     private float GetClipDuration(AnimationClip clip)
@@ -581,12 +631,87 @@ public class MotionGenWindow : EditorWindow
         if (_selectedAnimator == null || _activeClip == null)
             return;
 
+        PrepareAnimatorForMotionGenPlayback();
+        EnsurePreviewRootReference(_activeClip);
+
         if (!AnimationMode.InAnimationMode())
             AnimationMode.StartAnimationMode();
 
         _currentPreviewTime = Mathf.Clamp(_currentPreviewTime, 0f, GetClipDuration(_activeClip));
         AnimationMode.SampleAnimationClip(_selectedAnimator.gameObject, _activeClip, _currentPreviewTime);
+        ApplyPreviewRootMotion(_activeClip, _currentPreviewTime);
         SceneView.RepaintAll();
+    }
+
+    private void EnsurePreviewRootReference(AnimationClip clip, bool force = false)
+    {
+        if (_selectedAnimator == null || clip == null)
+            return;
+
+        int clipId = clip.GetInstanceID();
+        if (!force && _hasPreviewRootReference && _previewRootClipInstanceId == clipId)
+            return;
+
+        _previewRootBaseLocalPosition = _selectedAnimator.transform.localPosition;
+        _previewRootBaseLocalRotation = _selectedAnimator.transform.localRotation;
+        _previewClipRootStartPosition = EvaluateHumanoidRootPosition(clip, 0f);
+        _previewClipRootStartRotation = EvaluateHumanoidRootRotation(clip, 0f);
+        _previewRootClipInstanceId = clipId;
+        _hasPreviewRootReference = true;
+    }
+
+    private void ApplyPreviewRootMotion(AnimationClip clip, float time)
+    {
+        if (_selectedAnimator == null || clip == null)
+            return;
+
+        if (!_hasPreviewRootReference || _previewRootClipInstanceId != clip.GetInstanceID())
+            EnsurePreviewRootReference(clip, true);
+
+        var currentRootPosition = EvaluateHumanoidRootPosition(clip, time);
+        var currentRootRotation = EvaluateHumanoidRootRotation(clip, time);
+
+        var deltaPosition = currentRootPosition - _previewClipRootStartPosition;
+        var deltaRotation = currentRootRotation * Quaternion.Inverse(_previewClipRootStartRotation);
+
+        _selectedAnimator.transform.localPosition = _previewRootBaseLocalPosition + deltaPosition;
+        _selectedAnimator.transform.localRotation = deltaRotation * _previewRootBaseLocalRotation;
+    }
+
+    private static Vector3 EvaluateHumanoidRootPosition(AnimationClip clip, float time)
+    {
+        return new Vector3(
+            EvaluateAnimatorCurve(clip, "RootT.x", time),
+            EvaluateAnimatorCurve(clip, "RootT.y", time),
+            EvaluateAnimatorCurve(clip, "RootT.z", time));
+    }
+
+    private static Quaternion EvaluateHumanoidRootRotation(AnimationClip clip, float time)
+    {
+        var rotation = new Quaternion(
+            EvaluateAnimatorCurve(clip, "RootQ.x", time),
+            EvaluateAnimatorCurve(clip, "RootQ.y", time),
+            EvaluateAnimatorCurve(clip, "RootQ.z", time),
+            EvaluateAnimatorCurve(clip, "RootQ.w", time));
+
+        float magnitudeSq = rotation.x * rotation.x + rotation.y * rotation.y + rotation.z * rotation.z + rotation.w * rotation.w;
+        return magnitudeSq > 1e-8f ? Quaternion.Normalize(rotation) : Quaternion.identity;
+    }
+
+    private static float EvaluateAnimatorCurve(AnimationClip clip, string propertyName, float time)
+    {
+        if (clip == null || string.IsNullOrEmpty(propertyName))
+            return 0f;
+
+        var binding = new EditorCurveBinding
+        {
+            path = string.Empty,
+            type = typeof(Animator),
+            propertyName = propertyName
+        };
+
+        var curve = AnimationUtility.GetEditorCurve(clip, binding);
+        return curve != null ? curve.Evaluate(time) : 0f;
     }
 
     private void DrawAnimationsPanel()
@@ -625,6 +750,14 @@ public class MotionGenWindow : EditorWindow
             if (GUILayout.Button("Apply Last Generated Clip"))
             {
                 ApplyLastGeneratedClip();
+            }
+        }
+
+        using (new EditorGUI.DisabledScope(_selectedAnimator == null || !HasLastGeneratedCanonicalJson()))
+        {
+            if (GUILayout.Button("Analyze Last Generated JSON"))
+            {
+                ExportLastGeneratedRetargetDiagnostics();
             }
         }
     }
@@ -672,6 +805,7 @@ public class MotionGenWindow : EditorWindow
 
             File.WriteAllBytes(absolutePath, response.Data.ToByteArray());
             AssetDatabase.Refresh();
+            _lastGeneratedSourceAssetPath = assetPath;
 
             if (_selectedAnimator != null)
             {
@@ -707,7 +841,7 @@ public class MotionGenWindow : EditorWindow
                 {
                     // ── BVH path: parse in C# and build Humanoid clip via HumanPoseHandler ──
                     var bvhText = System.Text.Encoding.UTF8.GetString(response.Data.ToByteArray());
-                    var (bvhClip, bvhAvatar) = BvhImporter.ImportAsHumanoid(bvhText);
+                    var (bvhClip, bvhAvatar) = BvhImporter.ImportAsHumanoid(bvhText, _selectedAnimator);
                     if (bvhClip != null)
                     {
                         // Save the clip as a .anim asset.
@@ -998,6 +1132,7 @@ public class MotionGenWindow : EditorWindow
             var motion = JsonUtility.FromJson<GeneratedMotionJson>(jsonText);
             if (motion == null || motion.frames == null || motion.frames.Length == 0)
                 return false;
+            bool isCanonical = string.Equals(motion.schema, CanonicalSchema, StringComparison.OrdinalIgnoreCase);
 
             EnsureFolders();
 
@@ -1009,6 +1144,20 @@ public class MotionGenWindow : EditorWindow
             {
                 clip = new AnimationClip();
                 AssetDatabase.CreateAsset(clip, clipPath);
+            }
+
+            if (CanonicalHumanoidRetargeter.TryCreateClipFromJson(jsonText, _selectedAnimator, clip, _settings, _settings.fps))
+            {
+                EditorUtility.SetDirty(clip);
+                AssetDatabase.SaveAssets();
+                Debug.Log($"[MotionGen] Built Humanoid clip from canonical retarget path: {clip.name}");
+                return true;
+            }
+
+            if (isCanonical)
+            {
+                Debug.LogError("[MotionGen] Canonical JSON retargeting failed. Refusing to fall back to the legacy raw-curve path because it produces misleading motion for canonical exports.");
+                return false;
             }
 
             clip.ClearCurves();
@@ -1333,6 +1482,11 @@ public class MotionGenWindow : EditorWindow
         new Vector3(0,-1,0),
     };
 
+    private static readonly int[] T2MParents22 =
+    {
+        -1, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 12, 13, 14, 16, 17, 18, 19,
+    };
+
     private static Vector3 GetSourceReferenceDirectionUnity(int jointIndex, int childJointIndex)
     {
         if (childJointIndex < 0 || childJointIndex >= T2MRawOffsets22.Length)
@@ -1340,6 +1494,237 @@ public class MotionGenWindow : EditorWindow
 
         var d = T2MRawOffsets22[childJointIndex];
         return new Vector3(d.x, d.y, -d.z);
+    }
+
+    private static Quaternion[] BuildSourceReferenceLocalRotationsUnity()
+    {
+        var positions = BuildSourceReferencePositionsUnity();
+        var localRotations = new Quaternion[22];
+        var worldRotations = new Quaternion[22];
+
+        for (int i = 0; i < 22; i++)
+        {
+            localRotations[i] = Quaternion.identity;
+            worldRotations[i] = Quaternion.identity;
+        }
+
+        for (int i = 0; i < 22; i++)
+        {
+            var parentWorldRotation = Quaternion.identity;
+            int parent = T2MParents22[i];
+            if (parent >= 0 && parent < i)
+                parentWorldRotation = worldRotations[parent];
+
+            if (!TryGetSourceReferenceWorldRotation(positions, i, parentWorldRotation, out worldRotations[i]))
+                worldRotations[i] = parentWorldRotation;
+
+            localRotations[i] = parent >= 0 && parent < i
+                ? Quaternion.Inverse(parentWorldRotation) * worldRotations[i]
+                : worldRotations[i];
+        }
+
+        return localRotations;
+    }
+
+    private static Vector3[] BuildSourceReferencePositionsUnity()
+    {
+        var positions = new Vector3[22];
+        positions[0] = Vector3.zero;
+        for (int i = 1; i < 22; i++)
+        {
+            positions[i] = positions[T2MParents22[i]] + new Vector3(T2MRawOffsets22[i].x, T2MRawOffsets22[i].y, -T2MRawOffsets22[i].z);
+        }
+
+        return positions;
+    }
+
+    private static bool TryGetSourceReferenceWorldRotation(Vector3[] positions, int sourceIndex, Quaternion referenceRotation, out Quaternion rotation)
+    {
+        rotation = Quaternion.identity;
+
+        if (!TryGetSourceReferenceBasis(positions, sourceIndex, out var aimVector, out var poleVector))
+            return false;
+
+        return TryBuildBasisRotation(aimVector, poleVector, referenceRotation, out rotation);
+    }
+
+    private static bool TryGetSourceReferenceBasis(Vector3[] p, int sourceIndex, out Vector3 aimVector, out Vector3 poleVector)
+    {
+        aimVector = Vector3.up;
+        poleVector = Vector3.forward;
+
+        var characterForward = ComputeCharacterForward(p);
+        var chestForward = ComputeChestForward(p, characterForward);
+
+        switch (sourceIndex)
+        {
+            case 0:
+                aimVector = p[3] - p[0];
+                if (aimVector.sqrMagnitude < 1e-8f)
+                    aimVector = p[6] - p[0];
+                poleVector = chestForward;
+                return true;
+            case 1:
+                aimVector = p[4] - p[1];
+                poleVector = ComputePoleFromBendPlane(p[1], p[4], p[7], characterForward);
+                return true;
+            case 2:
+                aimVector = p[5] - p[2];
+                poleVector = ComputePoleFromBendPlane(p[2], p[5], p[8], characterForward);
+                return true;
+            case 3:
+                aimVector = p[6] - p[3];
+                poleVector = chestForward;
+                return true;
+            case 4:
+                aimVector = p[7] - p[4];
+                poleVector = ComputePoleFromBendPlane(p[1], p[4], p[7], characterForward);
+                return true;
+            case 5:
+                aimVector = p[8] - p[5];
+                poleVector = ComputePoleFromBendPlane(p[2], p[5], p[8], characterForward);
+                return true;
+            case 6:
+                aimVector = p[9] - p[6];
+                poleVector = chestForward;
+                return true;
+            case 7:
+                aimVector = p[10] - p[7];
+                poleVector = ComputePoleFromBendPlane(p[4], p[7], p[10], characterForward);
+                return true;
+            case 8:
+                aimVector = p[11] - p[8];
+                poleVector = ComputePoleFromBendPlane(p[5], p[8], p[11], characterForward);
+                return true;
+            case 9:
+                aimVector = p[12] - p[9];
+                poleVector = chestForward;
+                return true;
+            case 12:
+                aimVector = p[15] - p[12];
+                poleVector = chestForward;
+                return true;
+            case 13:
+                aimVector = p[16] - p[13];
+                poleVector = chestForward;
+                return true;
+            case 14:
+                aimVector = p[17] - p[14];
+                poleVector = chestForward;
+                return true;
+            case 15:
+                aimVector = p[15] - p[12];
+                poleVector = chestForward;
+                return true;
+            case 16:
+                aimVector = p[18] - p[16];
+                poleVector = ComputePoleFromBendPlane(p[16], p[18], p[20], chestForward);
+                return true;
+            case 17:
+                aimVector = p[19] - p[17];
+                poleVector = ComputePoleFromBendPlane(p[17], p[19], p[21], chestForward);
+                return true;
+            case 18:
+                aimVector = p[20] - p[18];
+                poleVector = ComputePoleFromBendPlane(p[16], p[18], p[20], chestForward);
+                return true;
+            case 19:
+                aimVector = p[21] - p[19];
+                poleVector = ComputePoleFromBendPlane(p[17], p[19], p[21], chestForward);
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private static bool TryBuildBasisRotation(Vector3 aimVector, Vector3 poleVector, Quaternion referenceRotation, out Quaternion rotation)
+    {
+        rotation = Quaternion.identity;
+
+        if (aimVector.sqrMagnitude < 1e-8f)
+            return false;
+
+        var aim = aimVector.normalized;
+        var pole = Vector3.ProjectOnPlane(poleVector, aim);
+
+        if (pole.sqrMagnitude < 1e-8f)
+        {
+            pole = Vector3.ProjectOnPlane(Vector3.forward, aim);
+            if (pole.sqrMagnitude < 1e-8f)
+                pole = Vector3.ProjectOnPlane(Vector3.right, aim);
+        }
+
+        if (pole.sqrMagnitude < 1e-8f)
+            return false;
+
+        pole.Normalize();
+        var primary = Quaternion.LookRotation(pole, aim);
+        var flipped = Quaternion.LookRotation(-pole, aim);
+
+        rotation = Quaternion.Angle(flipped, referenceRotation) < Quaternion.Angle(primary, referenceRotation)
+            ? flipped
+            : primary;
+        return true;
+    }
+
+    private static Vector3 ComputeCharacterForward(Vector3[] positions)
+    {
+        var hipRight = SafeNormalize(positions[1] - positions[2], Vector3.right);
+        var shoulderRight = SafeNormalize(positions[14] - positions[13], hipRight);
+        var lateral = (hipRight + shoulderRight) * 0.5f;
+        if (lateral.sqrMagnitude < 1e-8f)
+            lateral = shoulderRight.sqrMagnitude > 1e-8f ? shoulderRight : hipRight;
+
+        var up = positions[9] - positions[0];
+        if (up.sqrMagnitude < 1e-8f)
+            up = positions[12] - positions[0];
+        up = SafeNormalize(up, Vector3.up);
+
+        var forward = Vector3.Cross(lateral, up);
+        if (forward.sqrMagnitude < 1e-8f)
+            forward = Vector3.forward;
+
+        return forward.normalized;
+    }
+
+    private static Vector3 ComputeChestForward(Vector3[] positions, Vector3 fallbackForward)
+    {
+        var shoulderRight = positions[14] - positions[13];
+        var spineUp = positions[12] - positions[6];
+        if (spineUp.sqrMagnitude < 1e-8f)
+            spineUp = positions[9] - positions[3];
+
+        if (shoulderRight.sqrMagnitude < 1e-8f || spineUp.sqrMagnitude < 1e-8f)
+            return fallbackForward;
+
+        var forward = Vector3.Cross(shoulderRight.normalized, spineUp.normalized);
+        if (forward.sqrMagnitude < 1e-8f)
+            return fallbackForward;
+
+        return forward.normalized;
+    }
+
+    private static Vector3 ComputePoleFromBendPlane(Vector3 root, Vector3 mid, Vector3 end, Vector3 fallbackPole)
+    {
+        var upper = mid - root;
+        var lower = end - mid;
+        if (upper.sqrMagnitude < 1e-8f)
+            return fallbackPole;
+
+        var bendNormal = Vector3.Cross(upper, lower);
+        if (bendNormal.sqrMagnitude < 1e-8f)
+            return fallbackPole;
+
+        var pole = Vector3.Cross(bendNormal.normalized, upper.normalized);
+        if (pole.sqrMagnitude < 1e-8f)
+            return fallbackPole;
+
+        return pole.normalized;
+    }
+
+    private static Vector3 SafeNormalize(Vector3 value, Vector3 fallback)
+    {
+        return value.sqrMagnitude < 1e-8f ? fallback : value.normalized;
     }
 
     private static Vector3[,] BuildSmoothedUnityJoints(GeneratedFrame[] frames)
@@ -1399,16 +1784,15 @@ public class MotionGenWindow : EditorWindow
         if (_selectedAnimator == null || clip == null)
             return;
 
+        PrepareAnimatorForMotionGenPlayback();
+
         EnsureAnimatorControllerAndState(clip);
 
-        var controller = _selectedAnimator.runtimeAnimatorController as AnimatorController;
+        var controller = GetOrCreateDedicatedMotionGenController();
         if (controller == null)
-        {
-            var controllerPath = $"{GeneratedRoot}/{_selectedAnimator.name}_MotionGen.controller";
-            controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(controllerPath)
-                        ?? AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
-            _selectedAnimator.runtimeAnimatorController = controller;
-        }
+            return;
+
+        _selectedAnimator.runtimeAnimatorController = controller;
 
         var sm = controller.layers[0].stateMachine;
         var stateName = "MotionGen";
@@ -1422,12 +1806,55 @@ public class MotionGenWindow : EditorWindow
         EditorUtility.SetDirty(controller);
         AssetDatabase.SaveAssets();
 
+        _selectedAnimator.Rebind();
+        _selectedAnimator.Update(0f);
+        _selectedAnimator.Play(stateName, 0, 0f);
+        _selectedAnimator.Update(0f);
+
         _activeClip = clip;
+        EnsurePreviewRootReference(clip, true);
         _currentPreviewTime = 0f;
         SafeSelectObject(clip);
         SampleCurrentPose();
 
         Debug.Log($"[MotionGen] Applied generated clip non-destructively: {clip.name}");
+    }
+
+    private void PrepareAnimatorForMotionGenPlayback()
+    {
+        if (_selectedAnimator == null)
+            return;
+
+        if (!_selectedAnimator.enabled)
+        {
+            _selectedAnimator.enabled = true;
+            Debug.Log($"[MotionGen] Re-enabled Animator on '{_selectedAnimator.name}' for Humanoid clip playback.");
+        }
+
+        _selectedAnimator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+        _selectedAnimator.applyRootMotion = true;
+
+        var disabledPlayers = new HashSet<SMPLMotionPlayer>();
+        foreach (var player in _selectedAnimator.GetComponentsInParent<SMPLMotionPlayer>(true))
+        {
+            if (player != null && player.enabled)
+            {
+                player.enabled = false;
+                disabledPlayers.Add(player);
+            }
+        }
+
+        foreach (var player in _selectedAnimator.GetComponentsInChildren<SMPLMotionPlayer>(true))
+        {
+            if (player != null && player.enabled)
+            {
+                player.enabled = false;
+                disabledPlayers.Add(player);
+            }
+        }
+
+        foreach (var player in disabledPlayers)
+            Debug.LogWarning($"[MotionGen] Disabled conflicting SMPL playback component on '{player.gameObject.name}' so the generated Humanoid clip can drive the avatar.");
     }
 
     private void ApplyLastGeneratedClip()
@@ -1455,9 +1882,67 @@ public class MotionGenWindow : EditorWindow
         _generateStatus = $"Applied: {clip.name}";
     }
 
+    private bool HasLastGeneratedCanonicalJson()
+    {
+        return !string.IsNullOrWhiteSpace(_lastGeneratedSourceAssetPath)
+            && _lastGeneratedSourceAssetPath.EndsWith(".json", StringComparison.OrdinalIgnoreCase)
+            && !_lastGeneratedSourceAssetPath.EndsWith(".smpl.json", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void ExportLastGeneratedRetargetDiagnostics()
+    {
+        if (_selectedAnimator == null)
+        {
+            Debug.LogWarning("[MotionGen] Select a humanoid before running diagnostics.");
+            return;
+        }
+
+        if (!HasLastGeneratedCanonicalJson())
+        {
+            Debug.LogWarning("[MotionGen] No canonical generated JSON is available for diagnostics.");
+            return;
+        }
+
+        try
+        {
+            var absoluteSourcePath = Path.GetFullPath(_lastGeneratedSourceAssetPath);
+            if (!File.Exists(absoluteSourcePath))
+            {
+                Debug.LogWarning($"[MotionGen] Generated JSON missing: {_lastGeneratedSourceAssetPath}");
+                return;
+            }
+
+            var jsonText = File.ReadAllText(absoluteSourcePath, Encoding.UTF8);
+            if (!CanonicalHumanoidRetargeter.TryBuildRetargetDiagnosisFromJson(jsonText, _selectedAnimator, _settings, out var diagnosisText))
+            {
+                Debug.LogWarning("[MotionGen] Diagnostics require a canonical motiongen-canonical-v1 JSON file and a valid humanoid avatar.");
+                return;
+            }
+
+            EnsureFolders();
+            var baseName = Path.GetFileNameWithoutExtension(_lastGeneratedSourceAssetPath);
+            var reportAssetPath = $"{GeneratedRoot}/{baseName}_retarget_diagnostics.md";
+            var absoluteReportPath = Path.GetFullPath(reportAssetPath);
+
+            File.WriteAllText(absoluteReportPath, diagnosisText, Encoding.UTF8);
+            AssetDatabase.Refresh();
+
+            var reportAsset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(reportAssetPath);
+            if (reportAsset != null)
+                SafeSelectObject(reportAsset);
+
+            Debug.Log($"[MotionGen] Retarget diagnostics saved: {reportAssetPath}");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[MotionGen] Retarget diagnostics failed: {ex.Message}");
+        }
+    }
+
     [Serializable]
     private class GeneratedMotionJson
     {
+        public string schema;
         public int fps = 30;
         public GeneratedFrame[] frames;
     }

@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -323,6 +324,32 @@ namespace MotionGen
             ("R_Wrist",     "RightHand"),
         };
 
+        private static readonly Dictionary<string, HumanBodyBones> BoneMappingToHumanBodyBones = new()
+        {
+            { "Pelvis", HumanBodyBones.Hips },
+            { "L_Hip", HumanBodyBones.LeftUpperLeg },
+            { "R_Hip", HumanBodyBones.RightUpperLeg },
+            { "Spine1", HumanBodyBones.Spine },
+            { "L_Knee", HumanBodyBones.LeftLowerLeg },
+            { "R_Knee", HumanBodyBones.RightLowerLeg },
+            { "Spine2", HumanBodyBones.Chest },
+            { "L_Ankle", HumanBodyBones.LeftFoot },
+            { "R_Ankle", HumanBodyBones.RightFoot },
+            { "Spine3", HumanBodyBones.UpperChest },
+            { "L_Foot", HumanBodyBones.LeftToes },
+            { "R_Foot", HumanBodyBones.RightToes },
+            { "Neck", HumanBodyBones.Neck },
+            { "L_Collar", HumanBodyBones.LeftShoulder },
+            { "R_Collar", HumanBodyBones.RightShoulder },
+            { "Head", HumanBodyBones.Head },
+            { "L_Shoulder", HumanBodyBones.LeftUpperArm },
+            { "R_Shoulder", HumanBodyBones.RightUpperArm },
+            { "L_Elbow", HumanBodyBones.LeftLowerArm },
+            { "R_Elbow", HumanBodyBones.RightLowerArm },
+            { "L_Wrist", HumanBodyBones.LeftHand },
+            { "R_Wrist", HumanBodyBones.RightHand },
+        };
+
         private static HumanBone[] MakeHumanBones()
         {
             var bones = new HumanBone[BoneMapping.Length];
@@ -425,6 +452,34 @@ namespace MotionGen
             }
 
             Debug.Log($"[BvhImporter] Parsed BVH: {bvh.JointsDfsOrder.Count} joints, {bvh.FrameCount} frames, {bvh.FrameTime:F6}s/frame ({1f / bvh.FrameTime:F1} fps), {bvh.TotalChannels} channels");
+
+            return ImportAsHumanoidFromSourceSkeleton(bvh);
+        }
+
+        public static (AnimationClip clip, Avatar avatar) ImportAsHumanoid(string bvhText, Animator targetAnimator)
+        {
+            BvhClip bvh;
+            try
+            {
+                bvh = Parse(bvhText);
+                bvh.JointsDfsOrder = RebuildDfsOrder(bvh.Root);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[BvhImporter] Parse failed: {ex.Message}\n{ex.StackTrace}");
+                return (null, null);
+            }
+
+            Debug.Log($"[BvhImporter] Parsed BVH: {bvh.JointsDfsOrder.Count} joints, {bvh.FrameCount} frames, {bvh.FrameTime:F6}s/frame ({1f / bvh.FrameTime:F1} fps), {bvh.TotalChannels} channels");
+
+            if (targetAnimator == null || !targetAnimator.isHuman || targetAnimator.avatar == null || !targetAnimator.avatar.isValid)
+                return ImportAsHumanoidFromSourceSkeleton(bvh);
+
+            return ImportAsHumanoidForTargetAvatar(bvh, targetAnimator);
+        }
+
+        private static (AnimationClip clip, Avatar avatar) ImportAsHumanoidFromSourceSkeleton(BvhClip bvh)
+        {
 
             // ── 2.  Build temporary skeleton ──
             var skeletonRoot = BuildSkeleton(bvh, out var boneMap);
@@ -531,6 +586,89 @@ namespace MotionGen
             return (clip, avatar);
         }
 
+        private static (AnimationClip clip, Avatar avatar) ImportAsHumanoidForTargetAvatar(BvhClip bvh, Animator targetAnimator)
+        {
+            var humanBones = new Dictionary<string, Transform>();
+            var bindPositions = new Dictionary<string, Vector3>();
+            var bindRotations = new Dictionary<string, Quaternion>();
+
+            foreach (var joint in bvh.JointsDfsOrder)
+            {
+                if (!BoneMappingToHumanBodyBones.TryGetValue(joint.Name, out var humanBone))
+                    continue;
+
+                var bone = targetAnimator.GetBoneTransform(humanBone);
+                if (bone == null)
+                    continue;
+
+                humanBones[joint.Name] = bone;
+                bindPositions[joint.Name] = bone.localPosition;
+                bindRotations[joint.Name] = bone.localRotation;
+            }
+
+            if (humanBones.Count == 0)
+            {
+                Debug.LogWarning("[BvhImporter] Target animator has no usable humanoid bones; falling back to source-skeleton import.");
+                return ImportAsHumanoidFromSourceSkeleton(bvh);
+            }
+
+            var handler = new HumanPoseHandler(targetAnimator.avatar, targetAnimator.transform);
+            var pose = new HumanPose();
+
+            int numMuscles = HumanTrait.MuscleCount;
+            float fps = 1f / Mathf.Max(0.0001f, bvh.FrameTime);
+            float rootMotionScale = ComputeRootMotionScale(bvh, targetAnimator);
+
+            var muscleData = new float[bvh.FrameCount][];
+            var bodyPositions = new Vector3[bvh.FrameCount];
+            var bodyRotations = new Quaternion[bvh.FrameCount];
+
+            for (int f = 0; f < bvh.FrameCount; f++)
+            {
+                ResetTargetToBindPose(humanBones, bindPositions, bindRotations);
+                ApplyFrameToTargetAvatar(bvh, f, humanBones, bindPositions, bindRotations, rootMotionScale);
+
+                handler.GetHumanPose(ref pose);
+
+                bodyPositions[f] = pose.bodyPosition;
+                bodyRotations[f] = pose.bodyRotation;
+                muscleData[f] = (float[])pose.muscles.Clone();
+            }
+
+            var clip = new AnimationClip
+            {
+                frameRate = fps,
+                legacy = false,
+            };
+
+            for (int m = 0; m < numMuscles; m++)
+            {
+                var curve = new AnimationCurve();
+                for (int f = 0; f < bvh.FrameCount; f++)
+                    curve.AddKey(new Keyframe(f * bvh.FrameTime, muscleData[f][m]));
+
+                var binding = EditorCurveBinding.FloatCurve("", typeof(Animator), GetMusclePropertyName(m));
+                AnimationUtility.SetEditorCurve(clip, binding, curve);
+            }
+
+            SetAnimatorCurve(clip, "RootT.x", bvh, bodyPositions, p => p.x);
+            SetAnimatorCurve(clip, "RootT.y", bvh, bodyPositions, p => p.y);
+            SetAnimatorCurve(clip, "RootT.z", bvh, bodyPositions, p => p.z);
+
+            SetAnimatorCurve(clip, "RootQ.x", bvh, bodyRotations, q => q.x);
+            SetAnimatorCurve(clip, "RootQ.y", bvh, bodyRotations, q => q.y);
+            SetAnimatorCurve(clip, "RootQ.z", bvh, bodyRotations, q => q.z);
+            SetAnimatorCurve(clip, "RootQ.w", bvh, bodyRotations, q => q.w);
+
+            clip.EnsureQuaternionContinuity();
+
+            ResetTargetToBindPose(humanBones, bindPositions, bindRotations);
+            handler.Dispose();
+
+            Debug.Log($"[BvhImporter] AnimationClip created from target avatar bind pose: {clip.length:F2}s, {fps:F1} fps, scale {rootMotionScale:F3}.");
+            return (clip, null);
+        }
+
         // ──────────────── Helpers ─────────────────────────────────────────
 
         /// <summary>Reset all bones to their rest-pose (offset position, identity rotation).</summary>
@@ -542,6 +680,128 @@ namespace MotionGen
                 t.localPosition = BvhPosToUnity(joint.Offset);
                 t.localRotation = Quaternion.identity;
             }
+        }
+
+        private static void ResetTargetToBindPose(
+            Dictionary<string, Transform> boneMap,
+            Dictionary<string, Vector3> bindPositions,
+            Dictionary<string, Quaternion> bindRotations)
+        {
+            foreach (var kv in boneMap)
+            {
+                kv.Value.localPosition = bindPositions[kv.Key];
+                kv.Value.localRotation = bindRotations[kv.Key];
+            }
+        }
+
+        private static void ApplyFrameToTargetAvatar(
+            BvhClip clip,
+            int frame,
+            Dictionary<string, Transform> boneMap,
+            Dictionary<string, Vector3> bindPositions,
+            Dictionary<string, Quaternion> bindRotations,
+            float rootMotionScale)
+        {
+            var data = clip.Frames[frame];
+
+            foreach (var joint in clip.JointsDfsOrder)
+            {
+                if (!boneMap.TryGetValue(joint.Name, out var t))
+                    continue;
+
+                int off = joint.ChannelOffset;
+
+                if (joint.Channels.Count == 6)
+                {
+                    float px = data[off + 0];
+                    float py = data[off + 1];
+                    float pz = data[off + 2];
+                    var pos = BvhPosToUnity(new Vector3(px, py, pz)) * rootMotionScale;
+                    t.localPosition = bindPositions[joint.Name] + pos;
+
+                    float zr = data[off + 3];
+                    float yr = data[off + 4];
+                    float xr = data[off + 5];
+                    t.localRotation = bindRotations[joint.Name] * BvhEulerToUnityQuat(zr, yr, xr);
+                }
+                else if (joint.Channels.Count == 3)
+                {
+                    float zr = data[off + 0];
+                    float yr = data[off + 1];
+                    float xr = data[off + 2];
+                    t.localRotation = bindRotations[joint.Name] * BvhEulerToUnityQuat(zr, yr, xr);
+                }
+            }
+        }
+
+        private static float ComputeRootMotionScale(BvhClip bvh, Animator targetAnimator)
+        {
+            float source = ComputeSourceLegLength(bvh);
+            float target = ComputeTargetLegLength(targetAnimator);
+
+            if (source < 1e-5f || target < 1e-5f)
+                return 1f;
+
+            return target / source;
+        }
+
+        private static float ComputeSourceLegLength(BvhClip bvh)
+        {
+            var jointByName = bvh.JointsDfsOrder.ToDictionary(j => j.Name, j => j);
+            float left = ComputeSourceChainLength(jointByName, "L_Hip", "L_Knee", "L_Ankle", "L_Foot");
+            float right = ComputeSourceChainLength(jointByName, "R_Hip", "R_Knee", "R_Ankle", "R_Foot");
+
+            if (left > 1e-5f && right > 1e-5f)
+                return 0.5f * (left + right);
+            return Mathf.Max(left, right);
+        }
+
+        private static float ComputeSourceChainLength(Dictionary<string, BvhJoint> jointByName, params string[] jointNames)
+        {
+            float sum = 0f;
+            foreach (var name in jointNames)
+            {
+                if (jointByName.TryGetValue(name, out var joint))
+                    sum += joint.Offset.magnitude;
+            }
+            return sum;
+        }
+
+        private static float ComputeTargetLegLength(Animator targetAnimator)
+        {
+            float left = ComputeTargetChainLength(targetAnimator,
+                HumanBodyBones.LeftUpperLeg,
+                HumanBodyBones.LeftLowerLeg,
+                HumanBodyBones.LeftFoot,
+                HumanBodyBones.LeftToes);
+
+            float right = ComputeTargetChainLength(targetAnimator,
+                HumanBodyBones.RightUpperLeg,
+                HumanBodyBones.RightLowerLeg,
+                HumanBodyBones.RightFoot,
+                HumanBodyBones.RightToes);
+
+            if (left > 1e-5f && right > 1e-5f)
+                return 0.5f * (left + right);
+            return Mathf.Max(left, right);
+        }
+
+        private static float ComputeTargetChainLength(Animator targetAnimator, params HumanBodyBones[] bones)
+        {
+            float sum = 0f;
+            Transform prev = null;
+            foreach (var boneId in bones)
+            {
+                var bone = targetAnimator.GetBoneTransform(boneId);
+                if (bone == null)
+                    continue;
+
+                if (prev != null)
+                    sum += Vector3.Distance(prev.position, bone.position);
+
+                prev = bone;
+            }
+            return sum;
         }
 
         /// <summary>

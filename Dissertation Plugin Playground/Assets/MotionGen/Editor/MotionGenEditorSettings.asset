@@ -12,11 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 0}
   m_Name: MotionGenEditorSettings
   m_EditorClassIdentifier: Assembly-CSharp-firstpass::MotionGenEditorSettings
-  prompt: walk forward
+  prompt: A person walks forward.
   fps: 30
   durationSeconds: 2
   seed: 0
-  format: 0
+  format: 1
   exportSmplSidecar: 0
   useRetargetCalibration: 1
+  canonicalRetargetExperimentMode: 0
   retargetCalibration: []

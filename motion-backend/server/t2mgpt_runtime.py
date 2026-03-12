@@ -167,6 +167,9 @@ class T2MGPTGenerator:
 
         import clip
         from utils.motion_process import recover_root_rot_pos, recover_from_ric
+        from utils.paramUtil import t2m_kinematic_chain, t2m_raw_offsets
+        from utils.skeleton import Skeleton
+        from utils.quaternion import cont6d_to_matrix_np
 
         if seed:
             torch.manual_seed(seed)
@@ -183,73 +186,127 @@ class T2MGPTGenerator:
             pred_np = (pred_np * self.std) + self.mean
             pred_pose = torch.from_numpy(pred_np).unsqueeze(0).to(self.device)
 
-        joint_xyz = recover_from_ric(pred_pose, 22)[0].detach().cpu().numpy()  # [T,22,3]
+        joint_xyz_ric = recover_from_ric(pred_pose.float(), 22)[0].detach().cpu().numpy().astype(np.float32)  # [T,22,3]
 
-        r_rot_quat, _ = recover_root_rot_pos(pred_pose)
-        r_rot_quat = r_rot_quat[0].detach().cpu().numpy()  # [T,4]
+        r_rot_quat, r_pos = recover_root_rot_pos(pred_pose.float())
+        r_rot_quat = r_rot_quat[0].detach().cpu().numpy()  # [T,4] (w,x,y,z)
+        r_pos = r_pos[0].detach().cpu().numpy()            # [T,3]
 
-        # Fix: Root joint (0) Y from recover_from_ric is on an unreliable
-        # scale (often above the head).  Place it midway between the two
-        # hip joints (1 & 2) which have correct absolute Y values.
-        joint_xyz[:, 0, 1] = (joint_xyz[:, 1, 1] + joint_xyz[:, 2, 1]) / 2.0
+        pred_np = pred_pose[0].detach().cpu().numpy().astype(np.float32)
+        cont6d_21 = pred_np[:, 67:193].reshape(pred_np.shape[0], 21, 6)
+        root_rotmats = self._quat_to_rotmat_np(r_rot_quat)
+        root_cont6d = np.concatenate([root_rotmats[:, :, 0], root_rotmats[:, :, 1]], axis=-1)
+        cont6d_all = np.concatenate([root_cont6d[:, np.newaxis, :], cont6d_21], axis=1)
+        local_rotmats = cont6d_to_matrix_np(cont6d_all)
+        local_quats_xyzw = self._rotmat_to_quat_xyzw_np(local_rotmats)
 
-        # ── Separate into world trajectory + root-relative body pose ──
-        root_traj = joint_xyz[:, 0, :].copy()             # [T, 3]
-        local_joints = joint_xyz - joint_xyz[:, 0:1, :]   # [T, 22, 3]
+        skeleton = Skeleton(
+            torch.from_numpy(t2m_raw_offsets).float(),
+            t2m_kinematic_chain,
+            "cpu",
+        )
+        skeleton.get_offsets_joints(torch.from_numpy(joint_xyz_ric[0]).float())
+        offsets = skeleton._offset.numpy().copy().astype(np.float32)
+        offsets[0] = [0.0, 0.0, 0.0]
 
-        # Ground the trajectory: shift Y so first-frame feet sit at Y=0.
-        # world_foot_y = root_traj_y + local_foot_y → want ≈ 0
-        min_local_foot_y = min(float(local_joints[0, 10, 1]),
-                               float(local_joints[0, 11, 1]))
-        root_traj[:, 1] -= (root_traj[0, 1] + min_local_foot_y)
+        cont6d_all_t = torch.from_numpy(cont6d_all).float()
+        r_pos_t = torch.from_numpy(r_pos.astype(np.float32)).float()
+        joint_xyz_fk = skeleton.forward_kinematics_cont6d(cont6d_all_t, r_pos_t).detach().cpu().numpy().astype(np.float32)
 
-        # Centre XZ at origin (frame 0 starts at 0).
-        root_traj[:, 0] -= root_traj[0, 0]
-        root_traj[:, 2] -= root_traj[0, 2]
-
-        root_traj = root_traj.astype(np.float32)
-        local_joints = local_joints.astype(np.float32)
-
+        local_joints = (joint_xyz_fk - joint_xyz_fk[:, 0:1, :]).astype(np.float32)
         yaw_rad = 2.0 * np.arctan2(r_rot_quat[:, 2], r_rot_quat[:, 0])
-        yaw_deg = np.degrees(yaw_rad)
+        yaw_deg = np.degrees(yaw_rad).astype(np.float32)
 
-        target_frames = max(2, int(max(0.1, duration_seconds) * max(1, fps)))
-        pos_rs = self._resample(root_traj, target_frames)
-        yaw_rs = self._resample(yaw_deg.astype(np.float32), target_frames)
+        joint_stream_delta = np.linalg.norm(joint_xyz_fk - joint_xyz_ric, axis=-1)
+        joint_stream_delta_mean = float(np.mean(joint_stream_delta))
+        joint_stream_delta_max = float(np.max(joint_stream_delta))
 
-        joints_local_rs = np.zeros((target_frames, 22, 3), dtype=np.float32)
-        for j in range(22):
-            joints_local_rs[:, j, :] = self._resample(local_joints[:, j, :], target_frames)
+        joint_names = [
+            "pelvis", "left_hip", "right_hip", "spine1", "left_knee", "right_knee",
+            "spine2", "left_ankle", "right_ankle", "spine3", "left_foot", "right_foot",
+            "neck", "left_collar", "right_collar", "head", "left_shoulder", "right_shoulder",
+            "left_elbow", "right_elbow", "left_wrist", "right_wrist",
+        ]
+        parents = [-1, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9, 12, 13, 14, 16, 17, 18, 19]
 
+        native_fps = 20
+        r_pos = r_pos.astype(np.float32, copy=True)
+        r_pos[:, [0, 2]] /= float(native_fps)
         frames = []
-        for i in range(target_frames):
+        for i in range(pred_np.shape[0]):
             joints_payload = []
             for j in range(22):
                 joints_payload.append(
                     {
-                        "x": float(joints_local_rs[i, j, 0]),
-                        "y": float(joints_local_rs[i, j, 1]),
-                        "z": float(joints_local_rs[i, j, 2]),
+                        "x": float(local_joints[i, j, 0]),
+                        "y": float(local_joints[i, j, 1]),
+                        "z": float(local_joints[i, j, 2]),
+                    }
+                )
+
+            world_joints_payload = []
+            for j in range(22):
+                world_joints_payload.append(
+                    {
+                        "x": float(joint_xyz_fk[i, j, 0]),
+                        "y": float(joint_xyz_fk[i, j, 1]),
+                        "z": float(joint_xyz_fk[i, j, 2]),
+                    }
+                )
+
+            local_rotations_payload = []
+            for j in range(22):
+                local_rotations_payload.append(
+                    {
+                        "x": float(local_quats_xyzw[i, j, 0]),
+                        "y": float(local_quats_xyzw[i, j, 1]),
+                        "z": float(local_quats_xyzw[i, j, 2]),
+                        "w": float(local_quats_xyzw[i, j, 3]),
                     }
                 )
 
             frames.append(
                 {
+                    "rootRotation": {
+                        "x": float(r_rot_quat[i, 1]),
+                        "y": float(r_rot_quat[i, 2]),
+                        "z": float(r_rot_quat[i, 3]),
+                        "w": float(r_rot_quat[i, 0]),
+                    },
                     "position": {
-                        "x": float(pos_rs[i, 0]),
-                        "y": float(pos_rs[i, 1]),
-                        "z": float(pos_rs[i, 2]),
+                        "x": float(r_pos[i, 0]),
+                        "y": float(r_pos[i, 1]),
+                        "z": float(r_pos[i, 2]),
                     },
                     "rotationEuler": {
                         "x": 0.0,
-                        "y": float(yaw_rs[i]),
+                        "y": float(yaw_deg[i]),
                         "z": 0.0,
                     },
                     "joints": joints_payload,
+                    "worldJoints": world_joints_payload,
+                    "localRotations": local_rotations_payload,
                 }
             )
 
-        motion_json = {"fps": fps, "frames": frames}
+        rest_offsets_payload = []
+        for j in range(22):
+            rest_offsets_payload.append(
+                {
+                    "x": float(offsets[j, 0]),
+                    "y": float(offsets[j, 1]),
+                    "z": float(offsets[j, 2]),
+                }
+            )
+
+        motion_json = {
+            "schema": "motiongen-canonical-v1",
+            "fps": native_fps,
+            "jointNames": joint_names,
+            "parents": parents,
+            "restOffsets": rest_offsets_payload,
+            "frames": frames,
+        }
         payload = json.dumps(motion_json).encode("utf-8")
 
         meta = {
@@ -261,6 +318,9 @@ class T2MGPTGenerator:
             "format": "JSON",
             "mode": "real",
             "denormalized": self.mean is not None and self.std is not None,
+            "world_joints_source": "fk_from_local_rotations",
+            "joint_stream_delta_mean": joint_stream_delta_mean,
+            "joint_stream_delta_max": joint_stream_delta_max,
         }
 
         return payload, "t2mgpt_generated.json", json.dumps(meta)
@@ -318,6 +378,9 @@ class T2MGPTGenerator:
         r_rot_quat, r_pos = recover_root_rot_pos(pred_pose.float())
         r_rot_quat = r_rot_quat[0].cpu().numpy()  # (T, 4) — (w, x, y, z)
         r_pos = r_pos[0].cpu().numpy()             # (T, 3) — world root pos
+        native_fps = 20.0
+        r_pos = r_pos.astype(np.float32, copy=True)
+        r_pos[:, [0, 2]] /= float(native_fps)
 
         # ── 2. Extract cont6d local rotations for joints 1-21 ──
         pred_np = pred_pose[0].cpu().numpy()  # (T, 263)
@@ -350,11 +413,10 @@ class T2MGPTGenerator:
         offsets = skeleton._offset.numpy().copy()  # (22, 3)
         offsets[0] = [0.0, 0.0, 0.0]  # root offset in BVH = origin
 
-        # ── 6. Root position — raw model output, no post-processing ──
+        # ── 6. Root position — convert documented XZ linear velocity to per-frame displacement ──
         root_pos = r_pos.copy()  # (T, 3)
 
         # ── 7. Write BVH at model's native frame rate (20 fps) ──
-        native_fps = 20.0
         bvh_text = write_bvh(
             root_positions=root_pos.astype(np.float32),
             local_rotmats=local_rotmats,
@@ -400,3 +462,43 @@ class T2MGPTGenerator:
         R[..., 2, 1] = 2*(y*z + x*w)
         R[..., 2, 2] = 1 - 2*(x*x + y*y)
         return R
+
+    @staticmethod
+    def _rotmat_to_quat_xyzw_np(R: np.ndarray) -> np.ndarray:
+        """Rotation matrix to quaternion in xyzw order, batched."""
+        mats = R.reshape(-1, 3, 3)
+        out = np.zeros((mats.shape[0], 4), dtype=np.float32)
+
+        for i, m in enumerate(mats):
+            trace = float(m[0, 0] + m[1, 1] + m[2, 2])
+
+            if trace > 0.0:
+                s = np.sqrt(trace + 1.0) * 2.0
+                qw = 0.25 * s
+                qx = (m[2, 1] - m[1, 2]) / s
+                qy = (m[0, 2] - m[2, 0]) / s
+                qz = (m[1, 0] - m[0, 1]) / s
+            elif m[0, 0] > m[1, 1] and m[0, 0] > m[2, 2]:
+                s = np.sqrt(1.0 + m[0, 0] - m[1, 1] - m[2, 2]) * 2.0
+                qw = (m[2, 1] - m[1, 2]) / s
+                qx = 0.25 * s
+                qy = (m[0, 1] + m[1, 0]) / s
+                qz = (m[0, 2] + m[2, 0]) / s
+            elif m[1, 1] > m[2, 2]:
+                s = np.sqrt(1.0 + m[1, 1] - m[0, 0] - m[2, 2]) * 2.0
+                qw = (m[0, 2] - m[2, 0]) / s
+                qx = (m[0, 1] + m[1, 0]) / s
+                qy = 0.25 * s
+                qz = (m[1, 2] + m[2, 1]) / s
+            else:
+                s = np.sqrt(1.0 + m[2, 2] - m[0, 0] - m[1, 1]) * 2.0
+                qw = (m[1, 0] - m[0, 1]) / s
+                qx = (m[0, 2] + m[2, 0]) / s
+                qy = (m[1, 2] + m[2, 1]) / s
+                qz = 0.25 * s
+
+            q = np.array([qx, qy, qz, qw], dtype=np.float32)
+            q /= np.linalg.norm(q) + 1e-8
+            out[i] = q
+
+        return out.reshape(R.shape[:-2] + (4,))

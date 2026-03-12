@@ -7,6 +7,7 @@ using UnityEngine;
 public class MotionGenSettingsWindow : EditorWindow
 {
     private MotionGenEditorSettings _settings;
+    private Vector2 _scroll;
 
     public static void ShowWindow(MotionGenEditorSettings settings)
     {
@@ -30,17 +31,106 @@ public class MotionGenSettingsWindow : EditorWindow
         _settings.exportSmplSidecar = EditorGUILayout.ToggleLeft("Export SMPL sidecar (.smpl.json)", _settings.exportSmplSidecar);
 
         EditorGUILayout.Space();
+        DrawCalibrationEditor();
+
+        EditorGUILayout.Space();
         if (GUILayout.Button("Save"))
         {
             _settings.Save();
             Close();
         }
     }
+
+    private void DrawCalibrationEditor()
+    {
+        EditorGUILayout.LabelField("Manual Retarget Calibration", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox("Use this to manually adjust stored per-bone calibration when automatic capture is insufficient. Angles are applied as quaternions in XYZ Euler order.", MessageType.Info);
+
+        _settings.useRetargetCalibration = EditorGUILayout.ToggleLeft("Use Stored Calibration", _settings.useRetargetCalibration);
+
+        if (_settings.retargetCalibration == null)
+            _settings.retargetCalibration = new List<MotionGenEditorSettings.BoneCalibrationEntry>();
+
+        _scroll = EditorGUILayout.BeginScrollView(_scroll, GUILayout.MinHeight(220));
+
+        foreach (HumanBodyBones bone in GetEditableCalibrationBones())
+        {
+            if (!_settings.TryGetCalibration(bone, out var correction))
+                correction = Quaternion.identity;
+
+            Vector3 euler = ToSignedEuler(correction.eulerAngles);
+
+            EditorGUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField(bone.ToString(), EditorStyles.boldLabel);
+            EditorGUI.BeginChangeCheck();
+            var updatedEuler = EditorGUILayout.Vector3Field("Euler", euler);
+            if (EditorGUI.EndChangeCheck())
+            {
+                _settings.SetCalibration(bone, Quaternion.Euler(updatedEuler));
+                EditorUtility.SetDirty(_settings);
+            }
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Zero"))
+            {
+                _settings.SetCalibration(bone, Quaternion.identity);
+                EditorUtility.SetDirty(_settings);
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+        }
+
+        EditorGUILayout.EndScrollView();
+    }
+
+    private static HumanBodyBones[] GetEditableCalibrationBones()
+    {
+        return new[]
+        {
+            HumanBodyBones.Hips,
+            HumanBodyBones.LeftUpperLeg,
+            HumanBodyBones.RightUpperLeg,
+            HumanBodyBones.LeftLowerLeg,
+            HumanBodyBones.RightLowerLeg,
+            HumanBodyBones.LeftFoot,
+            HumanBodyBones.RightFoot,
+            HumanBodyBones.Neck,
+            HumanBodyBones.Head,
+            HumanBodyBones.LeftShoulder,
+            HumanBodyBones.RightShoulder,
+            HumanBodyBones.LeftUpperArm,
+            HumanBodyBones.RightUpperArm,
+            HumanBodyBones.LeftLowerArm,
+            HumanBodyBones.RightLowerArm,
+        };
+    }
+
+    private static Vector3 ToSignedEuler(Vector3 euler)
+    {
+        return new Vector3(ToSignedAngle(euler.x), ToSignedAngle(euler.y), ToSignedAngle(euler.z));
+    }
+
+    private static float ToSignedAngle(float angle)
+    {
+        angle %= 360f;
+        if (angle > 180f)
+            angle -= 360f;
+        return angle;
+    }
 }
 
 public class MotionGenEditorSettings : ScriptableObject
 {
     public enum MotionFormat { BVH, JSON }
+    public enum CanonicalRetargetExperimentMode
+    {
+        Baseline,
+        RootInverse,
+        LocalPreMultiplyBasis,
+        LocalConjugateBasis,
+        SelectivePreMultiplyBasis,
+        SelectiveConjugateBasis,
+    }
 
     [Serializable]
     public class BoneCalibrationEntry
@@ -53,9 +143,10 @@ public class MotionGenEditorSettings : ScriptableObject
     public int fps = 30;
     public float durationSeconds = 2.0f;
     public int seed = 0;
-    public MotionFormat format = MotionFormat.BVH;
+    public MotionFormat format = MotionFormat.JSON;
     public bool exportSmplSidecar = true;
     public bool useRetargetCalibration = true;
+    public CanonicalRetargetExperimentMode canonicalRetargetExperimentMode = CanonicalRetargetExperimentMode.Baseline;
     public List<BoneCalibrationEntry> retargetCalibration = new List<BoneCalibrationEntry>();
 
     private const string AssetPath = "Assets/MotionGen/Editor/MotionGenEditorSettings.asset";
