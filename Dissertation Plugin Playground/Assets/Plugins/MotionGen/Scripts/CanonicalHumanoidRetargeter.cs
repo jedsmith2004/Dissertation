@@ -125,6 +125,7 @@ namespace MotionGen
             public Transform[] boneTransforms;
             public Quaternion[] targetBindLocalRotations;
             public Quaternion[] sourceBindLocalRotations;
+            public Quaternion[] effectiveSourceBindLocalRotations;
             public Quaternion[] capturedCalibrationLocalRotations;
             public List<BoneTrack> tracks;
         }
@@ -229,6 +230,7 @@ namespace MotionGen
             sb.AppendLine($"- Avatar: {animator.avatar.name}");
             sb.AppendLine($"- Frames: {motion.frames.Length}");
             sb.AppendLine($"- Source FPS: {(motion.fps > 0 ? motion.fps : 20)}");
+            sb.AppendLine($"- Source basis mode: {GetSourceBasisModeLabel(settings)}");
             sb.AppendLine($"- Calibration enabled: {(settings != null && settings.useRetargetCalibration ? "yes" : "no")}");
             sb.AppendLine();
 
@@ -460,7 +462,7 @@ namespace MotionGen
 
                         var convertedLocalRotation = ConvertLocalRotationBetweenBindBases(
                             localRotation,
-                            GetBindLocalRotation(sourceRig.sourceBindLocalRotations, i),
+                            GetBindLocalRotation(sourceRig.effectiveSourceBindLocalRotations, i),
                             GetBindLocalRotation(sourceRig.targetBindLocalRotations, i)
                         );
 
@@ -846,6 +848,7 @@ namespace MotionGen
             var sourceBindPositions = BuildSourceBindPositionsUnity(motion);
             var targetBindLocalRotations = BuildBindLocalRotationsFromReferencePositions(targetNeutralPositions, parents);
             var sourceBindLocalRotations = BuildCanonicalSourceBindLocalRotations(sourceBindPositions, parents);
+            var effectiveSourceBindLocalRotations = CanonicalSourceBasisProfile.BuildEffectiveSourceBindLocalRotations(sourceBindLocalRotations, settings);
             var capturedCalibrationLocalRotations = BuildCapturedCalibrationLocalRotations(settings);
 
             var container = new GameObject("Canonical_AlignedSourceAvatar")
@@ -948,6 +951,7 @@ namespace MotionGen
                 boneTransforms = sourceBones,
                 targetBindLocalRotations = targetBindLocalRotations,
                 sourceBindLocalRotations = sourceBindLocalRotations,
+                effectiveSourceBindLocalRotations = effectiveSourceBindLocalRotations,
                 capturedCalibrationLocalRotations = capturedCalibrationLocalRotations,
                 tracks = tracks,
             };
@@ -4023,6 +4027,14 @@ namespace MotionGen
             return settings != null
                 ? settings.canonicalRetargetExperimentMode
                 : global::MotionGenEditorSettings.CanonicalRetargetExperimentMode.Baseline;
+        }
+
+        private static string GetSourceBasisModeLabel(global::MotionGenEditorSettings settings)
+        {
+            if (settings == null)
+                return global::MotionGenEditorSettings.CanonicalSourceBasisMode.LegacyInferred.ToString();
+
+            return settings.canonicalSourceBasisMode.ToString();
         }
 
         private static bool TryGetSourceBoneWorldRotation(Vector3[] positions, int sourceIndex, Quaternion referenceRotation, out Quaternion rotation)

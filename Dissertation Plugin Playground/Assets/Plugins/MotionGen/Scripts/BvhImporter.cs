@@ -298,71 +298,96 @@ namespace MotionGen
 
         // ──────────────── HumanBone mapping (BVH ↔ Humanoid) ─────────────
 
-        private static readonly (string bvh, string human)[] BoneMapping = new[]
+        private static readonly (string[] bvhAliases, string human)[] BoneMapping = new[]
         {
-            ("Pelvis",      "Hips"),
-            ("L_Hip",       "LeftUpperLeg"),
-            ("R_Hip",       "RightUpperLeg"),
-            ("Spine1",      "Spine"),
-            ("L_Knee",      "LeftLowerLeg"),
-            ("R_Knee",      "RightLowerLeg"),
-            ("Spine2",      "Chest"),
-            ("L_Ankle",     "LeftFoot"),
-            ("R_Ankle",     "RightFoot"),
-            ("Spine3",      "UpperChest"),
-            ("L_Foot",      "LeftToes"),
-            ("R_Foot",      "RightToes"),
-            ("Neck",        "Neck"),
-            ("L_Collar",    "LeftShoulder"),
-            ("R_Collar",    "RightShoulder"),
-            ("Head",        "Head"),
-            ("L_Shoulder",  "LeftUpperArm"),
-            ("R_Shoulder",  "RightUpperArm"),
-            ("L_Elbow",     "LeftLowerArm"),
-            ("R_Elbow",     "RightLowerArm"),
-            ("L_Wrist",     "LeftHand"),
-            ("R_Wrist",     "RightHand"),
+            (new[] { "Pelvis", "Hips" }, "Hips"),
+            (new[] { "L_Hip", "LeftUpLeg" }, "LeftUpperLeg"),
+            (new[] { "R_Hip", "RightUpLeg" }, "RightUpperLeg"),
+            (new[] { "Spine1", "Spine" }, "Spine"),
+            (new[] { "L_Knee", "LeftLeg" }, "LeftLowerLeg"),
+            (new[] { "R_Knee", "RightLeg" }, "RightLowerLeg"),
+            (new[] { "Spine2", "Spine1" }, "Chest"),
+            (new[] { "L_Ankle", "LeftFoot" }, "LeftFoot"),
+            (new[] { "R_Ankle", "RightFoot" }, "RightFoot"),
+            (new[] { "Spine3", "Spine2" }, "UpperChest"),
+            (new[] { "L_Foot", "LeftToe", "LeftToes" }, "LeftToes"),
+            (new[] { "R_Foot", "RightToe", "RightToes" }, "RightToes"),
+            (new[] { "Neck" }, "Neck"),
+            (new[] { "L_Collar", "LeftShoulder" }, "LeftShoulder"),
+            (new[] { "R_Collar", "RightShoulder" }, "RightShoulder"),
+            (new[] { "Head" }, "Head"),
+            (new[] { "L_Shoulder", "LeftArm" }, "LeftUpperArm"),
+            (new[] { "R_Shoulder", "RightArm" }, "RightUpperArm"),
+            (new[] { "L_Elbow", "LeftForeArm" }, "LeftLowerArm"),
+            (new[] { "R_Elbow", "RightForeArm" }, "RightLowerArm"),
+            (new[] { "L_Wrist", "LeftHand" }, "LeftHand"),
+            (new[] { "R_Wrist", "RightHand" }, "RightHand"),
         };
 
-        private static readonly Dictionary<string, HumanBodyBones> BoneMappingToHumanBodyBones = new()
+        private static HumanBone[] MakeHumanBones(BvhClip bvh)
         {
-            { "Pelvis", HumanBodyBones.Hips },
-            { "L_Hip", HumanBodyBones.LeftUpperLeg },
-            { "R_Hip", HumanBodyBones.RightUpperLeg },
-            { "Spine1", HumanBodyBones.Spine },
-            { "L_Knee", HumanBodyBones.LeftLowerLeg },
-            { "R_Knee", HumanBodyBones.RightLowerLeg },
-            { "Spine2", HumanBodyBones.Chest },
-            { "L_Ankle", HumanBodyBones.LeftFoot },
-            { "R_Ankle", HumanBodyBones.RightFoot },
-            { "Spine3", HumanBodyBones.UpperChest },
-            { "L_Foot", HumanBodyBones.LeftToes },
-            { "R_Foot", HumanBodyBones.RightToes },
-            { "Neck", HumanBodyBones.Neck },
-            { "L_Collar", HumanBodyBones.LeftShoulder },
-            { "R_Collar", HumanBodyBones.RightShoulder },
-            { "Head", HumanBodyBones.Head },
-            { "L_Shoulder", HumanBodyBones.LeftUpperArm },
-            { "R_Shoulder", HumanBodyBones.RightUpperArm },
-            { "L_Elbow", HumanBodyBones.LeftLowerArm },
-            { "R_Elbow", HumanBodyBones.RightLowerArm },
-            { "L_Wrist", HumanBodyBones.LeftHand },
-            { "R_Wrist", HumanBodyBones.RightHand },
-        };
+            var availableNames = new HashSet<string>(bvh.JointsDfsOrder.Select(j => j.Name));
+            bool usesMixamoStyleNames = availableNames.Contains("Spine") || availableNames.Contains("LeftUpLeg");
+            var bones = new List<HumanBone>();
 
-        private static HumanBone[] MakeHumanBones()
-        {
-            var bones = new HumanBone[BoneMapping.Length];
             for (int i = 0; i < BoneMapping.Length; i++)
             {
-                bones[i] = new HumanBone
+                var aliases = BoneMapping[i].bvhAliases;
+                if (usesMixamoStyleNames)
                 {
-                    boneName = BoneMapping[i].bvh,
+                    aliases = BoneMapping[i].human switch
+                    {
+                        "Spine" => new[] { "Spine", "Spine1" },
+                        "Chest" => new[] { "Spine1", "Spine2" },
+                        "UpperChest" => new[] { "Spine2", "Spine3" },
+                        _ => aliases,
+                    };
+                }
+
+                var selectedAlias = aliases.FirstOrDefault(availableNames.Contains);
+                if (string.IsNullOrEmpty(selectedAlias))
+                    continue;
+
+                bones.Add(new HumanBone
+                {
+                    boneName = selectedAlias,
                     humanName = BoneMapping[i].human,
                     limit = new HumanLimit { useDefaultValues = true },
-                };
+                });
             }
-            return bones;
+            return bones.ToArray();
+        }
+
+        private static bool TryGetHumanBodyBone(string humanName, out HumanBodyBones bone)
+        {
+            switch (humanName)
+            {
+                case "Hips": bone = HumanBodyBones.Hips; return true;
+                case "LeftUpperLeg": bone = HumanBodyBones.LeftUpperLeg; return true;
+                case "RightUpperLeg": bone = HumanBodyBones.RightUpperLeg; return true;
+                case "Spine": bone = HumanBodyBones.Spine; return true;
+                case "LeftLowerLeg": bone = HumanBodyBones.LeftLowerLeg; return true;
+                case "RightLowerLeg": bone = HumanBodyBones.RightLowerLeg; return true;
+                case "Chest": bone = HumanBodyBones.Chest; return true;
+                case "LeftFoot": bone = HumanBodyBones.LeftFoot; return true;
+                case "RightFoot": bone = HumanBodyBones.RightFoot; return true;
+                case "UpperChest": bone = HumanBodyBones.UpperChest; return true;
+                case "LeftToes": bone = HumanBodyBones.LeftToes; return true;
+                case "RightToes": bone = HumanBodyBones.RightToes; return true;
+                case "Neck": bone = HumanBodyBones.Neck; return true;
+                case "LeftShoulder": bone = HumanBodyBones.LeftShoulder; return true;
+                case "RightShoulder": bone = HumanBodyBones.RightShoulder; return true;
+                case "Head": bone = HumanBodyBones.Head; return true;
+                case "LeftUpperArm": bone = HumanBodyBones.LeftUpperArm; return true;
+                case "RightUpperArm": bone = HumanBodyBones.RightUpperArm; return true;
+                case "LeftLowerArm": bone = HumanBodyBones.LeftLowerArm; return true;
+                case "RightLowerArm": bone = HumanBodyBones.RightLowerArm; return true;
+                case "LeftHand": bone = HumanBodyBones.LeftHand; return true;
+                case "RightHand": bone = HumanBodyBones.RightHand; return true;
+                default:
+                    bone = HumanBodyBones.LastBone;
+                    return false;
+            }
         }
 
         private static SkeletonBone[] MakeSkeletonBones(GameObject skeletonRoot)
@@ -487,7 +512,7 @@ namespace MotionGen
             // ── 3.  Build Humanoid Avatar ──
             var desc = new HumanDescription
             {
-                human = MakeHumanBones(),
+                human = MakeHumanBones(bvh),
                 skeleton = MakeSkeletonBones(skeletonRoot),
                 upperArmTwist = 0.5f,
                 lowerArmTwist = 0.5f,
@@ -591,19 +616,20 @@ namespace MotionGen
             var humanBones = new Dictionary<string, Transform>();
             var bindPositions = new Dictionary<string, Vector3>();
             var bindRotations = new Dictionary<string, Quaternion>();
+            var resolvedHumanBones = MakeHumanBones(bvh);
 
-            foreach (var joint in bvh.JointsDfsOrder)
+            foreach (var mapping in resolvedHumanBones)
             {
-                if (!BoneMappingToHumanBodyBones.TryGetValue(joint.Name, out var humanBone))
+                if (!TryGetHumanBodyBone(mapping.humanName, out var humanBone))
                     continue;
 
                 var bone = targetAnimator.GetBoneTransform(humanBone);
                 if (bone == null)
                     continue;
 
-                humanBones[joint.Name] = bone;
-                bindPositions[joint.Name] = bone.localPosition;
-                bindRotations[joint.Name] = bone.localRotation;
+                humanBones[mapping.boneName] = bone;
+                bindPositions[mapping.boneName] = bone.localPosition;
+                bindRotations[mapping.boneName] = bone.localRotation;
             }
 
             if (humanBones.Count == 0)

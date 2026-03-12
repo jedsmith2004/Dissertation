@@ -31,6 +31,9 @@ public class MotionGenSettingsWindow : EditorWindow
         _settings.exportSmplSidecar = EditorGUILayout.ToggleLeft("Export SMPL sidecar (.smpl.json)", _settings.exportSmplSidecar);
 
         EditorGUILayout.Space();
+        DrawSourceBasisEditor();
+
+        EditorGUILayout.Space();
         DrawCalibrationEditor();
 
         EditorGUILayout.Space();
@@ -39,6 +42,57 @@ public class MotionGenSettingsWindow : EditorWindow
             _settings.Save();
             Close();
         }
+    }
+
+    private void DrawSourceBasisEditor()
+    {
+        EditorGUILayout.LabelField("Canonical Source Basis", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox("This is the structural source-rig basis layer. Use it for canonical T2M-GPT bone-axis assumptions, not per-avatar compensation. These overrides are applied before humanoid transfer.", MessageType.Info);
+
+        _settings.canonicalSourceBasisMode = (MotionGenEditorSettings.CanonicalSourceBasisMode)EditorGUILayout.EnumPopup(
+            "Source Basis Mode",
+            _settings.canonicalSourceBasisMode);
+
+        if (_settings.sourceBasisOverrides == null)
+            _settings.sourceBasisOverrides = new List<MotionGenEditorSettings.SourceBasisEntry>();
+
+        using (new EditorGUI.DisabledScope(_settings.canonicalSourceBasisMode != MotionGenEditorSettings.CanonicalSourceBasisMode.ManualOverrides))
+        {
+            foreach (HumanBodyBones bone in GetEditableSourceBasisBones())
+            {
+                if (!_settings.TryGetSourceBasisOverride(bone, out var correction))
+                    correction = Quaternion.identity;
+
+                Vector3 euler = ToSignedEuler(correction.eulerAngles);
+
+                EditorGUILayout.BeginVertical("box");
+                EditorGUILayout.LabelField(bone.ToString(), EditorStyles.boldLabel);
+                EditorGUI.BeginChangeCheck();
+                var updatedEuler = EditorGUILayout.Vector3Field("Local Euler", euler);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    _settings.SetSourceBasisOverride(bone, Quaternion.Euler(updatedEuler));
+                    EditorUtility.SetDirty(_settings);
+                }
+
+                EditorGUILayout.BeginHorizontal();
+                if (GUILayout.Button("Zero"))
+                {
+                    _settings.SetSourceBasisOverride(bone, Quaternion.identity);
+                    EditorUtility.SetDirty(_settings);
+                }
+                EditorGUILayout.EndHorizontal();
+                EditorGUILayout.EndVertical();
+            }
+        }
+
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("Clear Source Basis Overrides"))
+        {
+            _settings.ClearSourceBasisOverrides();
+            EditorUtility.SetDirty(_settings);
+        }
+        EditorGUILayout.EndHorizontal();
     }
 
     private void DrawCalibrationEditor()
@@ -83,6 +137,27 @@ public class MotionGenSettingsWindow : EditorWindow
         EditorGUILayout.EndScrollView();
     }
 
+    private static HumanBodyBones[] GetEditableSourceBasisBones()
+    {
+        return new[]
+        {
+            HumanBodyBones.Hips,
+            HumanBodyBones.LeftUpperLeg,
+            HumanBodyBones.RightUpperLeg,
+            HumanBodyBones.LeftLowerLeg,
+            HumanBodyBones.RightLowerLeg,
+            HumanBodyBones.LeftFoot,
+            HumanBodyBones.RightFoot,
+            HumanBodyBones.Neck,
+            HumanBodyBones.LeftShoulder,
+            HumanBodyBones.RightShoulder,
+            HumanBodyBones.LeftUpperArm,
+            HumanBodyBones.RightUpperArm,
+            HumanBodyBones.LeftLowerArm,
+            HumanBodyBones.RightLowerArm,
+        };
+    }
+
     private static HumanBodyBones[] GetEditableCalibrationBones()
     {
         return new[]
@@ -122,6 +197,12 @@ public class MotionGenSettingsWindow : EditorWindow
 public class MotionGenEditorSettings : ScriptableObject
 {
     public enum MotionFormat { BVH, JSON }
+    public enum CanonicalSourceBasisMode
+    {
+        LegacyInferred,
+        ManualOverrides,
+    }
+
     public enum CanonicalRetargetExperimentMode
     {
         Baseline,
@@ -139,12 +220,21 @@ public class MotionGenEditorSettings : ScriptableObject
         public Quaternion correction = Quaternion.identity;
     }
 
+    [Serializable]
+    public class SourceBasisEntry
+    {
+        public int bone;
+        public Quaternion localCorrection = Quaternion.identity;
+    }
+
     public string prompt = "walk forward";
     public int fps = 30;
     public float durationSeconds = 2.0f;
     public int seed = 0;
     public MotionFormat format = MotionFormat.JSON;
     public bool exportSmplSidecar = true;
+    public CanonicalSourceBasisMode canonicalSourceBasisMode = CanonicalSourceBasisMode.LegacyInferred;
+    public List<SourceBasisEntry> sourceBasisOverrides = new List<SourceBasisEntry>();
     public bool useRetargetCalibration = true;
     public CanonicalRetargetExperimentMode canonicalRetargetExperimentMode = CanonicalRetargetExperimentMode.Baseline;
     public List<BoneCalibrationEntry> retargetCalibration = new List<BoneCalibrationEntry>();
@@ -189,6 +279,21 @@ public class MotionGenEditorSettings : ScriptableObject
         }
     }
 
+    public void SetSourceBasisOverride(HumanBodyBones bone, Quaternion localCorrection)
+    {
+        var key = (int)bone;
+        var entry = sourceBasisOverrides.Find(e => e.bone == key);
+        if (entry == null)
+        {
+            entry = new SourceBasisEntry { bone = key, localCorrection = localCorrection };
+            sourceBasisOverrides.Add(entry);
+        }
+        else
+        {
+            entry.localCorrection = localCorrection;
+        }
+    }
+
     public bool TryGetCalibration(HumanBodyBones bone, out Quaternion correction)
     {
         var key = (int)bone;
@@ -203,9 +308,28 @@ public class MotionGenEditorSettings : ScriptableObject
         return false;
     }
 
+    public bool TryGetSourceBasisOverride(HumanBodyBones bone, out Quaternion localCorrection)
+    {
+        var key = (int)bone;
+        var entry = sourceBasisOverrides.Find(e => e.bone == key);
+        if (entry != null)
+        {
+            localCorrection = entry.localCorrection;
+            return true;
+        }
+
+        localCorrection = Quaternion.identity;
+        return false;
+    }
+
     public void ClearCalibration()
     {
         retargetCalibration.Clear();
+    }
+
+    public void ClearSourceBasisOverrides()
+    {
+        sourceBasisOverrides.Clear();
     }
 }
 #endif

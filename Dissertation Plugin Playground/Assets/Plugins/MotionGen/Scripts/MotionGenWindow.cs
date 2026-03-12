@@ -161,8 +161,9 @@ public class MotionGenWindow : EditorWindow
 
         EditorGUILayout.Space();
         _settings.useRetargetCalibration = EditorGUILayout.ToggleLeft("Use Retarget Calibration", _settings.useRetargetCalibration);
+        EditorGUILayout.LabelField("Source Basis Mode", _settings.canonicalSourceBasisMode.ToString());
         _settings.canonicalRetargetExperimentMode = (MotionGenEditorSettings.CanonicalRetargetExperimentMode)EditorGUILayout.EnumPopup(
-            "Canonical Retarget Experiment",
+            "Legacy Retarget Experiment",
             _settings.canonicalRetargetExperimentMode);
         EditorGUILayout.BeginHorizontal();
         if (GUILayout.Button("Capture T-Pose Calibration"))
