@@ -10,10 +10,10 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 import motion_pb2, motion_pb2_grpc
 from dummy_bvh import DUMMY_BVH
-from t2mgpt_runtime import T2MGPTGenerator
+from t2mgpt_exact_bvh import T2MGPTExactBvhGenerator
 
 
-t2mgpt_generator = T2MGPTGenerator()
+t2mgpt_generator = T2MGPTExactBvhGenerator()
     
 class MotionService(motion_pb2_grpc.MotionServiceServicer):
     def Ping(self, request, context):
@@ -48,22 +48,13 @@ class MotionService(motion_pb2_grpc.MotionServiceServicer):
             duration_seconds = request.duration_seconds or 2.0
             out_dir = os.path.join(os.getcwd(), "outputs")
 
-            if request.format == motion_pb2.JSON:
-                data, filename, meta = t2mgpt_generator.generate_json(
-                    prompt=request.prompt,
-                    fps=fps,
-                    duration_seconds=duration_seconds,
-                    seed=request.seed
-                )
-                reply_format = motion_pb2.JSON
-            else:
-                data, filename, meta = t2mgpt_generator.generate_bvh(
-                    prompt=request.prompt,
-                    fps=fps,
-                    duration_seconds=duration_seconds,
-                    seed=request.seed
-                )
-                reply_format = motion_pb2.BVH
+            data, filename, meta = t2mgpt_generator.generate_bvh(
+                prompt=request.prompt,
+                fps=fps,
+                duration_seconds=duration_seconds,
+                seed=request.seed
+            )
+            reply_format = motion_pb2.BVH
 
             return motion_pb2.GenerateReply(
                 format=reply_format,
@@ -103,8 +94,7 @@ def generate_t2mgpt(prompt: str, fps: int, duration_seconds: float, seed: int, o
         return data, filename, json.dumps(meta)
 
 def generate_t2mgpt_json(prompt: str, fps: int, duration_seconds: float, seed: int, out_dir: str):
-        # Backward-compatible wrapper retained for callers that may still reference this function.
-        return t2mgpt_generator.generate_json(prompt=prompt, fps=fps, duration_seconds=duration_seconds, seed=seed)
+    raise RuntimeError("Legacy JSON generation has been removed. The active MotionGen pipeline now always returns exact BVH.")
 
 def serve(port: int = 50051):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
