@@ -39,9 +39,14 @@ class MotionService(motion_pb2_grpc.MotionServiceServicer):
     
     def Generate(self, request, context):
         try:
+            if request.model == motion_pb2.MOMASK:
+                context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+                context.set_details("MoMask generation is not yet implemented. Use T2M-GPT for now.")
+                return motion_pb2.GenerateReply()
+
             if request.model != motion_pb2.T2M_GPT:
                 context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-                context.set_details("Only T2M-GPT is enabled right now.")
+                context.set_details("Unknown model. Use T2M_GPT or MOMASK.")
                 return motion_pb2.GenerateReply()
 
             fps = request.fps or 30
