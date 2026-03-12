@@ -592,7 +592,7 @@ ModelImporter:
     - name: Left Arm
       parentName: Left Shoulder
       position: {x: 7.4505804e-11, y: 0.01007542, z: 0.0000000021141022}
-      rotation: {x: -0.049223572, y: 0.98660046, z: 0.0036660116, w: -0.15550993}
+      rotation: {x: -0.049223557, y: 0.98660046, z: 0.0036660107, w: -0.15550993}
       scale: {x: 1.0000001, y: 0.99999994, z: 1.0000005}
     - name: Left Forearm
       parentName: Left Arm
@@ -767,7 +767,7 @@ ModelImporter:
     - name: Right Hand Middle 2
       parentName: Right Hand Middle 1
       position: {x: 0.000000001238659, y: 0.0021143206, z: -7.45058e-10}
-      rotation: {x: -0.008959157, y: -0.0047941427, z: -0.028672947, w: 0.99953717}
+      rotation: {x: -0.00895916, y: -0.0047941427, z: -0.028672952, w: 0.99953717}
       scale: {x: 1.0000006, y: 1.0000004, z: 0.9999997}
     - name: Right Hand Middle 3
       parentName: Right Hand Middle 2

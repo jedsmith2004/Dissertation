@@ -13,11 +13,9 @@ MonoBehaviour:
   m_Name: MotionGenEditorSettings
   m_EditorClassIdentifier: Assembly-CSharp-firstpass::MotionGenEditorSettings
   prompt: A person walks forward.
-  fps: 30
+  fps: 20
   durationSeconds: 2
   seed: 0
-  format: 1
-  exportSmplSidecar: 0
-  useRetargetCalibration: 1
-  canonicalRetargetExperimentMode: 0
-  retargetCalibration: []
+  serverHost: 127.0.0.1
+  serverPort: 50051
+  autoApplyOnGenerate: 1

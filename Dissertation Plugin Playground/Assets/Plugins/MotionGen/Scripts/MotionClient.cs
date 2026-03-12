@@ -14,13 +14,7 @@ public class MotionClient : IDisposable
         _client = new MotionService.MotionServiceClient(_channel);
     }
 
-    public PingResponse Ping() => _client.Ping(new Empty());
-    public async Task<PingResponse> PingAsync() => await _client.PingAsync(new Empty());
-
-    public MotionReply GetDummyBVH() => _client.GetDummyBVH(new Empty());
-    public async Task<MotionReply> GetDummyBVHAsync() => await _client.GetDummyBVHAsync(new Empty());
-
-    public async Task<GenerateReply> GenerateAsync(string prompt, int fps, float durationSeconds, int seed, MotionFormat format)
+    public async Task<GenerateReply> GenerateAsync(string prompt, int fps, float durationSeconds, int seed)
     {
         var req = new GenerateRequest
         {
@@ -28,7 +22,7 @@ public class MotionClient : IDisposable
             Fps = fps,
             DurationSeconds = durationSeconds,
             Seed = seed,
-            Format = format,
+            Format = MotionFormat.Bvh,
             Model = MotionModel.T2MGpt
         };
 
