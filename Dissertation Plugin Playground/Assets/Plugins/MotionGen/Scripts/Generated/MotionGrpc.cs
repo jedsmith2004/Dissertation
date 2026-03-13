@@ -59,6 +59,14 @@ namespace Motion {
     static readonly grpc::Marshaller<global::Motion.BatchGenerateRequest> __Marshaller_motion_BatchGenerateRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Motion.BatchGenerateRequest.Parser));
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Marshaller<global::Motion.BatchGenerateReply> __Marshaller_motion_BatchGenerateReply = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Motion.BatchGenerateReply.Parser));
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    static readonly grpc::Marshaller<global::Motion.EditRequest> __Marshaller_motion_EditRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Motion.EditRequest.Parser));
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    static readonly grpc::Marshaller<global::Motion.EditReply> __Marshaller_motion_EditReply = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Motion.EditReply.Parser));
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    static readonly grpc::Marshaller<global::Motion.BatchEditRequest> __Marshaller_motion_BatchEditRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Motion.BatchEditRequest.Parser));
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    static readonly grpc::Marshaller<global::Motion.BatchEditReply> __Marshaller_motion_BatchEditReply = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Motion.BatchEditReply.Parser));
 
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Method<global::Motion.Empty, global::Motion.PingResponse> __Method_Ping = new grpc::Method<global::Motion.Empty, global::Motion.PingResponse>(
@@ -91,6 +99,22 @@ namespace Motion {
         "GenerateBatch",
         __Marshaller_motion_BatchGenerateRequest,
         __Marshaller_motion_BatchGenerateReply);
+
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    static readonly grpc::Method<global::Motion.EditRequest, global::Motion.EditReply> __Method_Edit = new grpc::Method<global::Motion.EditRequest, global::Motion.EditReply>(
+        grpc::MethodType.Unary,
+        __ServiceName,
+        "Edit",
+        __Marshaller_motion_EditRequest,
+        __Marshaller_motion_EditReply);
+
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    static readonly grpc::Method<global::Motion.BatchEditRequest, global::Motion.BatchEditReply> __Method_EditBatch = new grpc::Method<global::Motion.BatchEditRequest, global::Motion.BatchEditReply>(
+        grpc::MethodType.Unary,
+        __ServiceName,
+        "EditBatch",
+        __Marshaller_motion_BatchEditRequest,
+        __Marshaller_motion_BatchEditReply);
 
     /// <summary>Service descriptor</summary>
     public static global::Google.Protobuf.Reflection.ServiceDescriptor Descriptor
@@ -288,6 +312,46 @@ namespace Motion {
       public virtual grpc::AsyncUnaryCall<global::Motion.BatchGenerateReply> GenerateBatchAsync(global::Motion.BatchGenerateRequest request, grpc::CallOptions options)
       {
         return CallInvoker.AsyncUnaryCall(__Method_GenerateBatch, null, options, request);
+      }
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual global::Motion.EditReply Edit(global::Motion.EditRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return Edit(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual global::Motion.EditReply Edit(global::Motion.EditRequest request, grpc::CallOptions options)
+      {
+        return CallInvoker.BlockingUnaryCall(__Method_Edit, null, options, request);
+      }
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual grpc::AsyncUnaryCall<global::Motion.EditReply> EditAsync(global::Motion.EditRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return EditAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual grpc::AsyncUnaryCall<global::Motion.EditReply> EditAsync(global::Motion.EditRequest request, grpc::CallOptions options)
+      {
+        return CallInvoker.AsyncUnaryCall(__Method_Edit, null, options, request);
+      }
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual global::Motion.BatchEditReply EditBatch(global::Motion.BatchEditRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return EditBatch(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual global::Motion.BatchEditReply EditBatch(global::Motion.BatchEditRequest request, grpc::CallOptions options)
+      {
+        return CallInvoker.BlockingUnaryCall(__Method_EditBatch, null, options, request);
+      }
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual grpc::AsyncUnaryCall<global::Motion.BatchEditReply> EditBatchAsync(global::Motion.BatchEditRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return EditBatchAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual grpc::AsyncUnaryCall<global::Motion.BatchEditReply> EditBatchAsync(global::Motion.BatchEditRequest request, grpc::CallOptions options)
+      {
+        return CallInvoker.AsyncUnaryCall(__Method_EditBatch, null, options, request);
       }
       /// <summary>Creates a new instance of client from given <c>ClientBaseConfiguration</c>.</summary>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]

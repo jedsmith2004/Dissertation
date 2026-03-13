@@ -14,6 +14,8 @@ service MotionService {
   // TODO: Later, generate and serve actual BVH
   rpc Generate (GenerateRequest) returns (GenerateReply);
   rpc GenerateBatch (BatchGenerateRequest) returns (BatchGenerateReply);
+  rpc Edit (EditRequest) returns (EditReply);
+  rpc EditBatch (BatchEditRequest) returns (BatchEditReply);
 }
 
 message Empty {}
@@ -62,6 +64,48 @@ message BatchGenerateRequest {
 }
 
 message BatchGenerateReply {
+  repeated GenerateReply items = 1;
+}
+
+message MotionJointSequence {
+  int32 fps = 1;
+  int32 frame_count = 2;
+  int32 joint_count = 3;
+  repeated float joint_positions = 4;
+}
+
+message EditRange {
+  float start_seconds = 1;
+  float end_seconds = 2;
+}
+
+message EditRequest {
+  string prompt = 1;
+  int32 fps = 2;
+  int32 seed = 3;
+  MotionFormat format = 4;
+  MotionModel model = 5;
+  MotionJointSequence source_motion = 6;
+  repeated EditRange edit_ranges = 7;
+}
+
+message EditReply {
+  GenerateReply item = 1;
+}
+
+message BatchEditRequest {
+  string prompt = 1;
+  int32 fps = 2;
+  int32 count = 3;
+  bool use_random_seed = 4;
+  int32 seed = 5;
+  MotionFormat format = 6;
+  MotionModel model = 7;
+  MotionJointSequence source_motion = 8;
+  repeated EditRange edit_ranges = 9;
+}
+
+message BatchEditReply {
   repeated GenerateReply items = 1;
 }
 

@@ -18,10 +18,11 @@ They communicate over **gRPC** on `localhost:50051`.
 The implemented pipeline today is:
 
 1. **Prompt → BVH batch generation** using a selectable backend model.
-2. **BVH → Humanoid AnimationClip** conversion inside Unity via `BvhImporter` and `HumanPoseHandler`.
-3. **Library + preview workflow** in the `MotionGen` editor window.
-4. **Root path editing** by placing path keys in the Scene view and baking corrected root translation back into the clip.
-5. **Optional post-processing** from the `Post` tab, producing a preserved reference clip plus a separate processed clip.
+2. **Text-guided clip editing (MoMask)** over one or more selected time windows from a source clip.
+3. **BVH → Humanoid AnimationClip** conversion inside Unity via `BvhImporter` and `HumanPoseHandler`.
+4. **Library + preview workflow** in the `MotionGen` editor window.
+5. **Root path editing** by placing path keys in the Scene view and baking corrected root translation back into the clip.
+6. **Optional post-processing** from the `Post` tab, producing a preserved reference clip plus a separate processed clip.
 
 The current system is **BVH-only** and supports both `T2M_GPT` and `MOMASK`.
 
@@ -53,6 +54,14 @@ This is the implemented click-to-animation flow in the current codebase:
 10. In the **Path Edit** tab, users can place translation path keys and bake corrected root translation back into the clip’s `RootT.x/y/z` curves.
 11. In the **Post** tab, users can optionally create a preserved reference copy of the path-baked clip, review auto-detected contact windows, and generate a separate processed clip with smoothing/contact passes.
 
+Phase 1 edit flow (implemented):
+
+1. In **Library**, select a generated clip and use **Edit Selected Clip (MoMask)**.
+2. Enter an edit prompt (for example, "turn this section into a jump"), define one or more time windows, and choose version/seed settings.
+3. Unity samples a 22-joint source motion sequence from the selected humanoid clip and sends `BatchEditRequest` via gRPC.
+4. Backend `app.py` routes edit requests to the MoMask edit pipeline and applies masked text-guided editing over the selected ranges.
+5. Edited BVH variants are mirrored/imported like normal generations and persisted as new non-destructive library items with source/edit provenance.
+
 ---
 
 ## Architecture
@@ -64,7 +73,8 @@ This is the implemented click-to-animation flow in the current codebase:
 │    ├─ Generate tab                                           │
 │    │   └─ BatchGenerateRequest (BVH, T2M_GPT)                │
 │    ├─ Library tab                                            │
-│    │   └─ preview / inspect / apply generated clips          │
+│    │   ├─ preview / inspect / apply generated clips          │
+│    │   └─ BatchEditRequest (source clip + edit windows)      │
 │    ├─ Path Edit tab                                          │
 │    │   └─ root translation key editing + bake to RootT       │
 │    └─ Post tab                                               │
@@ -78,7 +88,8 @@ This is the implemented click-to-animation flow in the current codebase:
                                │  `app.py`                               │
                                │    ├─ Ping                              │
                                │    ├─ Generate                          │
-                               │    └─ GenerateBatch                     │
+                               │    ├─ GenerateBatch                     │
+                               │    └─ Edit / EditBatch                  │
                                │                                          │
                                │  `t2mgpt_exact_bvh.py`                  │
                                │    └─ T2M-GPT inference → BVH bytes     │
@@ -98,7 +109,7 @@ This is the implemented click-to-animation flow in the current codebase:
 
 ## Motion Backend (`motion-backend/`)
 
-The backend is a small gRPC service that currently exposes **BVH-only generation** for both `T2M-GPT` and `MoMask`.
+The backend is a small gRPC service that currently exposes **BVH-only generation/editing** for `T2M-GPT` and `MoMask`.
 
 ### Key Files
 
@@ -123,11 +134,14 @@ Defined in `motion-backend/protos/motion.proto`:
 | `GetDummyBVH` | `Empty` → `MotionReply` | Present in proto |
 | `Generate` | `GenerateRequest` → `GenerateReply` | Implemented |
 | `GenerateBatch` | `BatchGenerateRequest` → `BatchGenerateReply` | Implemented and used by Unity |
+| `Edit` | `EditRequest` → `EditReply` | Implemented (MoMask edit path) |
+| `EditBatch` | `BatchEditRequest` → `BatchEditReply` | Implemented and used by Unity Edit section |
 
 Important current limitations:
 
 - Only `BVH` output is accepted by `server/app.py`.
 - `GenerateBatch` is the main path used by the Unity editor.
+- `EditBatch` currently targets `MoMask` and expects a 22-joint source sequence payload.
 - `MoMask` requires its own upstream checkpoints in addition to the existing backend dependencies.
 
 ### Active Inference Flows

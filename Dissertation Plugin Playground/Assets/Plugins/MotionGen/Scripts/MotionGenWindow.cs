@@ -46,6 +46,13 @@ public class MotionGenWindow : EditorWindow
         public string seed_mode;
     }
 
+    [Serializable]
+    private class EditRangeDraft
+    {
+        public float startSeconds;
+        public float endSeconds;
+    }
+
     private MotionGenEditorSettings _settings;
     private MotionGenGenerationHistory _history;
     private Animator _selectedAnimator;
@@ -70,6 +77,10 @@ public class MotionGenWindow : EditorWindow
     private readonly HashSet<string> _expandedSessionIds = new HashSet<string>();
     private bool _isCapturingRootPathSamples;
     private Vector2 _postContactsScroll;
+    private string _editPrompt = string.Empty;
+    private int _editVersionCount = 1;
+    private string _editSeedText = string.Empty;
+    private readonly List<EditRangeDraft> _editRangeDrafts = new List<EditRangeDraft>();
 
     [MenuItem("Window/MotionGen")]
     public static void ShowWindow()
@@ -295,6 +306,19 @@ public class MotionGenWindow : EditorWindow
         EditorGUILayout.LabelField("Resolved Seed", item.resolvedSeed.ToString());
         EditorGUILayout.LabelField("External BVH", item.externalBvhPath);
         EditorGUILayout.LabelField("Active Variant", HasFreshProcessedClip(item) ? "Processed" : "Source");
+        if (item.isEditResult)
+        {
+            EditorGUILayout.LabelField("Type", "Edited Variant");
+            if (!string.IsNullOrWhiteSpace(item.sourceClipAssetPath))
+                EditorGUILayout.LabelField("Source Clip", item.sourceClipAssetPath);
+            if (!string.IsNullOrWhiteSpace(item.editPrompt))
+                EditorGUILayout.LabelField("Edit Prompt", item.editPrompt);
+            if (item.editRanges != null && item.editRanges.Count > 0)
+            {
+                var ranges = string.Join(", ", item.editRanges.Select(range => $"[{range.startSeconds:0.00}s-{range.endSeconds:0.00}s]"));
+                EditorGUILayout.LabelField("Edit Windows", ranges);
+            }
+        }
 
         _selectedPreviewTexture = clip != null
             ? AssetPreview.GetAssetPreview(clip) ?? AssetPreview.GetMiniThumbnail(clip)
@@ -334,6 +358,8 @@ public class MotionGenWindow : EditorWindow
 
         if (meta != null)
             EditorGUILayout.LabelField("Backend Meta", $"fps={meta.requested_fps}, nativeFps={meta.native_fps}, nativeFrames={meta.native_frame_count}, seedMode={meta.seed_mode}");
+
+        DrawEditSection(item, clip);
 
         EditorGUILayout.EndVertical();
     }
@@ -452,6 +478,429 @@ public class MotionGenWindow : EditorWindow
             RevealExport(item.externalBvhPath);
 
         EditorGUILayout.EndHorizontal();
+    }
+
+    private void DrawEditSection(MotionGenGenerationItem sourceItem, AnimationClip sourceClip)
+    {
+        if (sourceItem == null || sourceClip == null)
+            return;
+
+        EnsureDefaultEditRanges(sourceClip);
+
+        EditorGUILayout.Space();
+        EditorGUILayout.BeginVertical("box");
+        EditorGUILayout.LabelField("Edit Selected Clip (MoMask)", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox(
+            "Non-destructive edit: generate new clip variants for selected time windows without overwriting the source clip.",
+            MessageType.Info);
+
+        _editPrompt = EditorGUILayout.TextField("Edit Prompt", _editPrompt);
+        _editVersionCount = Mathf.Max(1, EditorGUILayout.IntField("Edited Versions", _editVersionCount));
+        _editSeedText = EditorGUILayout.TextField("Edit Seed (blank = random)", _editSeedText);
+
+        EditorGUILayout.LabelField("Time Windows (seconds)", EditorStyles.boldLabel);
+        for (var index = 0; index < _editRangeDrafts.Count; index++)
+            DrawEditRangeRow(sourceClip, index);
+
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("Add Window"))
+            _editRangeDrafts.Add(new EditRangeDraft { startSeconds = 0f, endSeconds = Mathf.Min(0.5f, GetClipLength(sourceClip)) });
+        if (GUILayout.Button("Full Clip"))
+        {
+            _editRangeDrafts.Clear();
+            _editRangeDrafts.Add(new EditRangeDraft { startSeconds = 0f, endSeconds = GetClipLength(sourceClip) });
+        }
+        EditorGUILayout.EndHorizontal();
+
+        using (new EditorGUI.DisabledScope(_isGenerating || _selectedAnimator == null || string.IsNullOrWhiteSpace(_editPrompt)))
+        {
+            if (GUILayout.Button(_isGenerating ? "Editing..." : "Generate Edited Variants"))
+                _ = GenerateEditedBatchAsync(sourceItem, sourceClip);
+        }
+
+        if (_selectedAnimator == null)
+            EditorGUILayout.HelpBox("Select a humanoid Animator in the scene to sample source joints for editing.", MessageType.Warning);
+        else if (string.IsNullOrWhiteSpace(_editPrompt))
+            EditorGUILayout.HelpBox("Enter an edit prompt to generate variants.", MessageType.None);
+
+        EditorGUILayout.EndVertical();
+    }
+
+    private void DrawEditRangeRow(AnimationClip sourceClip, int index)
+    {
+        var entry = _editRangeDrafts[index];
+        var maxTime = GetClipLength(sourceClip);
+
+        EditorGUILayout.BeginHorizontal();
+        EditorGUI.BeginChangeCheck();
+        var nextStart = EditorGUILayout.FloatField($"Start {index + 1}", entry.startSeconds);
+        var nextEnd = EditorGUILayout.FloatField("End", entry.endSeconds);
+        if (GUILayout.Button("X", GUILayout.Width(24f)))
+        {
+            _editRangeDrafts.RemoveAt(index);
+            EditorGUILayout.EndHorizontal();
+            return;
+        }
+
+        if (EditorGUI.EndChangeCheck())
+        {
+            entry.startSeconds = Mathf.Clamp(nextStart, 0f, maxTime);
+            entry.endSeconds = Mathf.Clamp(nextEnd, entry.startSeconds, maxTime);
+        }
+        EditorGUILayout.EndHorizontal();
+    }
+
+    private async Task GenerateEditedBatchAsync(MotionGenGenerationItem sourceItem, AnimationClip sourceClip)
+    {
+        if (sourceItem == null || sourceClip == null)
+            return;
+
+        if (_selectedAnimator == null || !_selectedAnimator.isHuman)
+        {
+            _status = "Editing requires a selected humanoid Animator in the scene.";
+            Repaint();
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_editPrompt))
+        {
+            _status = "Edit prompt is empty.";
+            Repaint();
+            return;
+        }
+
+        if (!TryResolveEditSeedSettings(out var useRandomSeed, out var baseSeed))
+        {
+            _status = "Edit seed must be blank or a valid integer.";
+            Repaint();
+            return;
+        }
+
+        var editRanges = BuildEditRangeRequests(sourceClip);
+        if (editRanges.Count == 0)
+        {
+            _status = "Add at least one non-empty edit window.";
+            Repaint();
+            return;
+        }
+
+        if (!TryBuildSourceMotionJointSequence(sourceClip, _settings.fps, out var sourceMotion, out var sourceError))
+        {
+            _status = sourceError ?? "Failed to build source motion for editing.";
+            Repaint();
+            return;
+        }
+
+        var sourceSession = _history?.sessions?.FirstOrDefault(session => session != null && session.id == _selectedSessionId);
+        var generationName = $"{sourceItem.displayName}_edit";
+        var exportDirectory = ResolveExportDirectory();
+        var mirrorRootAssetPath = NormalizeMirrorRootAssetPath(_settings.defaultMirrorRootAssetPath);
+
+        _isGenerating = true;
+        _status = "Sending edit batch request...";
+        Repaint();
+
+        try
+        {
+            using var client = new MotionClient(_settings.serverHost, _settings.serverPort);
+            var reply = await client.EditBatchAsync(
+                _editPrompt,
+                _settings.fps,
+                _editVersionCount,
+                useRandomSeed,
+                baseSeed,
+                MotionModel.Momask,
+                sourceMotion,
+                editRanges);
+
+            if (reply == null || reply.Items == null || reply.Items.Count == 0)
+                throw new InvalidOperationException("Backend returned no edited motions.");
+
+            var session = SaveEditedBatch(
+                generationName,
+                exportDirectory,
+                mirrorRootAssetPath,
+                reply,
+                useRandomSeed,
+                baseSeed,
+                sourceSession,
+                sourceItem,
+                _editPrompt,
+                editRanges);
+
+            _history.AddSession(session);
+            ExpandAndSelectLatest(session);
+
+            var autoApplyClip = LoadPreferredClip(session.items.FirstOrDefault());
+            if (_settings.autoApplyOnGenerate && _selectedAnimator != null && autoApplyClip != null)
+                ApplyGeneratedClip(autoApplyClip);
+
+            _activeTab = MotionGenTab.Library;
+            _status = $"Generated {session.items.Count} edited motion version(s).";
+        }
+        catch (RpcException ex)
+        {
+            _status = $"Edit RPC failed: {ex.StatusCode}";
+            Debug.LogError($"[MotionGen] Edit batch RPC failed: {ex.StatusCode} - {ex.Status.Detail}");
+        }
+        catch (Exception ex)
+        {
+            _status = "Edit failed.";
+            Debug.LogError($"[MotionGen] Edit batch failed: {ex}");
+        }
+        finally
+        {
+            _isGenerating = false;
+            Repaint();
+        }
+    }
+
+    private bool TryResolveEditSeedSettings(out bool useRandomSeed, out int baseSeed)
+    {
+        var seedText = (_editSeedText ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(seedText))
+        {
+            useRandomSeed = true;
+            baseSeed = 0;
+            return true;
+        }
+
+        useRandomSeed = false;
+        return int.TryParse(seedText, out baseSeed);
+    }
+
+    private List<EditRange> BuildEditRangeRequests(AnimationClip sourceClip)
+    {
+        var maxTime = GetClipLength(sourceClip);
+        var result = new List<EditRange>();
+
+        foreach (var draft in _editRangeDrafts)
+        {
+            if (draft == null)
+                continue;
+
+            var start = Mathf.Clamp(draft.startSeconds, 0f, maxTime);
+            var end = Mathf.Clamp(draft.endSeconds, start, maxTime);
+            if (end <= start)
+                continue;
+
+            result.Add(new EditRange
+            {
+                StartSeconds = start,
+                EndSeconds = end
+            });
+        }
+
+        return result;
+    }
+
+    private void EnsureDefaultEditRanges(AnimationClip sourceClip)
+    {
+        if (_editRangeDrafts.Count > 0)
+            return;
+
+        _editRangeDrafts.Add(new EditRangeDraft
+        {
+            startSeconds = 0f,
+            endSeconds = GetClipLength(sourceClip)
+        });
+    }
+
+    private bool TryBuildSourceMotionJointSequence(AnimationClip sourceClip, int sampleFps, out MotionJointSequence sequence, out string error)
+    {
+        sequence = null;
+        error = null;
+
+        if (_selectedAnimator == null || !_selectedAnimator.isHuman)
+        {
+            error = "A selected humanoid Animator is required to sample source joints.";
+            return false;
+        }
+
+        var joints = ResolveEditJointTransforms(_selectedAnimator, out error);
+        if (joints == null)
+            return false;
+
+        var fps = Mathf.Max(1, sampleFps);
+        var frameCount = Mathf.Max(4, Mathf.CeilToInt(GetClipLength(sourceClip) * fps) + 1);
+        var positions = new List<float>(frameCount * joints.Length * 3);
+
+        var go = _selectedAnimator.gameObject;
+        AnimationMode.StartAnimationMode();
+        try
+        {
+            for (var frame = 0; frame < frameCount; frame++)
+            {
+                var time = Mathf.Min(GetClipLength(sourceClip), frame / (float)fps);
+                AnimationMode.SampleAnimationClip(go, sourceClip, time);
+
+                for (var jointIndex = 0; jointIndex < joints.Length; jointIndex++)
+                {
+                    var transform = joints[jointIndex];
+                    if (transform == null)
+                    {
+                        error = "Missing humanoid transform while sampling source motion.";
+                        return false;
+                    }
+
+                    var position = transform.position;
+                    positions.Add(position.x);
+                    positions.Add(position.y);
+                    positions.Add(position.z);
+                }
+            }
+        }
+        finally
+        {
+            AnimationMode.StopAnimationMode();
+            _selectedAnimator.Rebind();
+            _selectedAnimator.Update(0f);
+        }
+
+        sequence = new MotionJointSequence
+        {
+            Fps = fps,
+            FrameCount = frameCount,
+            JointCount = joints.Length
+        };
+        sequence.JointPositions.Add(positions);
+        return true;
+    }
+
+    private static Transform[] ResolveEditJointTransforms(Animator animator, out string error)
+    {
+        error = null;
+
+        var required = new[]
+        {
+            HumanBodyBones.Hips,
+            HumanBodyBones.LeftUpperLeg,
+            HumanBodyBones.RightUpperLeg,
+            HumanBodyBones.Spine,
+            HumanBodyBones.LeftLowerLeg,
+            HumanBodyBones.RightLowerLeg,
+            HumanBodyBones.Chest,
+            HumanBodyBones.LeftFoot,
+            HumanBodyBones.RightFoot,
+            HumanBodyBones.UpperChest,
+            HumanBodyBones.LeftToes,
+            HumanBodyBones.RightToes,
+            HumanBodyBones.Neck,
+            HumanBodyBones.LeftShoulder,
+            HumanBodyBones.RightShoulder,
+            HumanBodyBones.Head,
+            HumanBodyBones.LeftUpperArm,
+            HumanBodyBones.RightUpperArm,
+            HumanBodyBones.LeftLowerArm,
+            HumanBodyBones.RightLowerArm,
+            HumanBodyBones.LeftHand,
+            HumanBodyBones.RightHand
+        };
+
+        var transforms = new Transform[required.Length];
+        for (var index = 0; index < required.Length; index++)
+        {
+            var bone = required[index];
+            var transform = animator.GetBoneTransform(bone);
+
+            if (transform == null && bone == HumanBodyBones.UpperChest)
+                transform = animator.GetBoneTransform(HumanBodyBones.Chest);
+
+            if (transform == null)
+            {
+                error = $"Selected humanoid is missing bone mapping for {bone}.";
+                return null;
+            }
+
+            transforms[index] = transform;
+        }
+
+        return transforms;
+    }
+
+    private MotionGenGenerationSession SaveEditedBatch(
+        string generationName,
+        string exportDirectory,
+        string mirrorRootAssetPath,
+        BatchEditReply reply,
+        bool useRandomSeed,
+        int baseSeed,
+        MotionGenGenerationSession sourceSession,
+        MotionGenGenerationItem sourceItem,
+        string editPrompt,
+        List<EditRange> editRanges)
+    {
+        Directory.CreateDirectory(exportDirectory);
+
+        var sessionId = $"{DateTime.UtcNow:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}".Substring(0, 24);
+        var mirrorSessionAssetPath = EnsureAssetFolder($"{mirrorRootAssetPath}/{SanitizeFileName(generationName)}_{sessionId}");
+        var session = new MotionGenGenerationSession
+        {
+            id = sessionId,
+            generationName = generationName,
+            prompt = editPrompt,
+            exportDirectory = exportDirectory,
+            mirrorDirectoryAssetPath = mirrorSessionAssetPath,
+            createdAtUtc = DateTime.UtcNow.ToString("O"),
+            versionCount = reply.Items.Count,
+            usedRandomSeed = useRandomSeed,
+            baseSeed = baseSeed
+        };
+
+        var pendingWrites = new List<(GenerateReply replyItem, string baseName, string externalPath, string mirrorBvhAssetPath)>();
+        for (var index = 0; index < reply.Items.Count; index++)
+        {
+            var itemReply = reply.Items[index];
+            if (itemReply == null || itemReply.Data == null || itemReply.Data.Length == 0)
+                continue;
+
+            if (itemReply.Format != MotionFormat.Bvh)
+                throw new InvalidOperationException($"Unexpected response format: {itemReply.Format}");
+
+            var baseName = BuildVersionBaseName(generationName, index);
+            var externalPath = GetUniqueExternalFilePath(Path.Combine(exportDirectory, $"{baseName}.bvh"));
+            var mirrorBvhAssetPath = AssetDatabase.GenerateUniqueAssetPath($"{mirrorSessionAssetPath}/{baseName}.bvh");
+
+            File.WriteAllBytes(externalPath, itemReply.Data.ToByteArray());
+            File.WriteAllBytes(Path.GetFullPath(mirrorBvhAssetPath), itemReply.Data.ToByteArray());
+            pendingWrites.Add((itemReply, baseName, externalPath, mirrorBvhAssetPath));
+        }
+
+        AssetDatabase.Refresh();
+
+        foreach (var pendingWrite in pendingWrites)
+        {
+            if (!BvhToAnimConverter.TryConvertBvhAssetToAnim(pendingWrite.mirrorBvhAssetPath, out var clip, out var clipAssetPath))
+                throw new InvalidOperationException($"BVH import failed for {pendingWrite.mirrorBvhAssetPath}.");
+
+            var meta = ParseMeta(pendingWrite.replyItem.Meta);
+            session.items.Add(new MotionGenGenerationItem
+            {
+                id = Guid.NewGuid().ToString("N"),
+                displayName = pendingWrite.baseName,
+                clipName = clip != null ? clip.name : pendingWrite.baseName,
+                externalBvhPath = pendingWrite.externalPath,
+                mirroredBvhAssetPath = pendingWrite.mirrorBvhAssetPath,
+                clipAssetPath = clipAssetPath,
+                backendFilename = pendingWrite.replyItem.Filename,
+                metaJson = pendingWrite.replyItem.Meta,
+                resolvedSeed = meta != null && meta.resolved_seed != 0 ? meta.resolved_seed : meta != null ? meta.seed : 0,
+                isEditResult = true,
+                sourceSessionId = sourceSession?.id,
+                sourceItemId = sourceItem?.id,
+                sourceClipAssetPath = sourceItem?.clipAssetPath,
+                editPrompt = editPrompt,
+                editRanges = editRanges
+                    .Select(range => new MotionGenEditRangeRecord
+                    {
+                        startSeconds = range.StartSeconds,
+                        endSeconds = range.EndSeconds
+                    })
+                    .ToList()
+            });
+        }
+
+        return session;
     }
 
     private void DrawPathEditTab()

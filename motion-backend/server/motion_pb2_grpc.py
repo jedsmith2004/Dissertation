@@ -54,6 +54,16 @@ class MotionServiceStub(object):
                 request_serializer=motion__pb2.BatchGenerateRequest.SerializeToString,
                 response_deserializer=motion__pb2.BatchGenerateReply.FromString,
                 _registered_method=True)
+        self.Edit = channel.unary_unary(
+                '/motion.MotionService/Edit',
+                request_serializer=motion__pb2.EditRequest.SerializeToString,
+                response_deserializer=motion__pb2.EditReply.FromString,
+                _registered_method=True)
+        self.EditBatch = channel.unary_unary(
+                '/motion.MotionService/EditBatch',
+                request_serializer=motion__pb2.BatchEditRequest.SerializeToString,
+                response_deserializer=motion__pb2.BatchEditReply.FromString,
+                _registered_method=True)
 
 
 class MotionServiceServicer(object):
@@ -81,6 +91,19 @@ class MotionServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def GenerateBatch(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Edit(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def EditBatch(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -107,6 +130,16 @@ def add_MotionServiceServicer_to_server(servicer, server):
                     servicer.GenerateBatch,
                     request_deserializer=motion__pb2.BatchGenerateRequest.FromString,
                     response_serializer=motion__pb2.BatchGenerateReply.SerializeToString,
+            ),
+            'Edit': grpc.unary_unary_rpc_method_handler(
+                    servicer.Edit,
+                    request_deserializer=motion__pb2.EditRequest.FromString,
+                    response_serializer=motion__pb2.EditReply.SerializeToString,
+            ),
+            'EditBatch': grpc.unary_unary_rpc_method_handler(
+                    servicer.EditBatch,
+                    request_deserializer=motion__pb2.BatchEditRequest.FromString,
+                    response_serializer=motion__pb2.BatchEditReply.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -217,6 +250,60 @@ class MotionService(object):
             '/motion.MotionService/GenerateBatch',
             motion__pb2.BatchGenerateRequest.SerializeToString,
             motion__pb2.BatchGenerateReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Edit(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/motion.MotionService/Edit',
+            motion__pb2.EditRequest.SerializeToString,
+            motion__pb2.EditReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def EditBatch(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/motion.MotionService/EditBatch',
+            motion__pb2.BatchEditRequest.SerializeToString,
+            motion__pb2.BatchEditReply.FromString,
             options,
             channel_credentials,
             insecure,

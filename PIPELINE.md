@@ -192,3 +192,95 @@ Final result:
 - **No retargeting** - Avatar is null, so BVH → .anim uses source skeleton (preserves exact motion)
 - **Exact recovery** - `recover_from_ric()` reconstructs canonical 22-joint positions from T2M-GPT features
 - **IK conversion** - MoMask converts joint positions to skeleton rotations via IK solver
+
+---
+
+# MotionGen Pipeline: Text-Guided Clip Editing (MoMask)
+
+Complete Phase 1 edit pipeline from selecting an existing clip in Library to saving edited non-destructive variants.
+
+---
+
+## **1. Select Source Clip + Edit Inputs (Unity)**
+
+- User selects a generated clip in **Library**
+- In **Edit Selected Clip (MoMask)**, user sets:
+  - edit prompt
+  - one or more edit windows (`start_seconds`, `end_seconds`)
+  - edited version count and seed mode
+
+---
+
+## **2. Build Edit Request (MotionGenWindow.cs)**
+
+```
+MotionGenWindow.GenerateEditedBatchAsync(...):
+  - samples source clip on selected humanoid Animator
+  - extracts 22 joint world positions per frame
+  - flattens into MotionJointSequence.joint_positions
+  - builds BatchEditRequest
+```
+
+---
+
+## **3. Send to Backend (MotionClient.cs)**
+
+```
+MotionClient.EditBatchAsync(...) sends:
+  - prompt
+  - fps
+  - count / use_random_seed / seed
+  - format = BVH
+  - model = MOMASK
+  - source_motion = MotionJointSequence
+  - edit_ranges = repeated EditRange
+```
+
+---
+
+## **4. Backend Edit Routing (app.py)**
+
+```
+MotionService.EditBatch():
+  - validates model + format
+  - parses source_motion into [frames, 22, 3]
+  - normalizes edit ranges
+  - resolves seed per requested variant
+  - calls MoMaskBvhGenerator.edit_bvh(...)
+```
+
+---
+
+## **5. MoMask Edit Inference (momask_bvh.py)**
+
+```
+edit_bvh(...):
+  - converts source joints -> MoMask feature space
+  - encodes source motion tokens with RVQVAE
+  - builds token-level edit mask from requested time windows
+  - runs MaskTransformer.edit(...) + ResidualTransformer.generate(...)
+  - decodes edited features and recovers 22-joint positions
+  - converts edited joints to BVH via Joint2BVHConvertor
+```
+
+---
+
+## **6. Save + Import Edited Variants (Unity)**
+
+```
+MotionGenWindow.SaveEditedBatch(...):
+  - writes edited BVH files (external + mirrored assets)
+  - imports each mirrored BVH to .anim
+  - stores non-destructive history item with provenance:
+      isEditResult, sourceSessionId, sourceItemId,
+      sourceClipAssetPath, editPrompt, editRanges
+```
+
+---
+
+## **7. Preview / Apply / Path Edit as Normal**
+
+- Edited clips are normal library items and work with:
+  - preview/apply
+  - path edit
+  - post-processing

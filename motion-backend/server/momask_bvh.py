@@ -3,7 +3,7 @@ import os
 import re
 import tempfile
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -35,6 +35,9 @@ class MoMaskBvhGenerator:
         self._mean: Optional[np.ndarray] = None
         self._std: Optional[np.ndarray] = None
         self._recover_from_ric = None
+        self._motion_process = None
+        self._param_util = None
+        self._skeleton_cls = None
 
     def _ensure_loaded(self, device: torch.device) -> None:
         if self._loaded:
@@ -46,7 +49,9 @@ class MoMaskBvhGenerator:
                 ResidualTransformer,
             )
             from models.vq.model import RVQVAE  # type: ignore[reportMissingImports]
+            from common.skeleton import Skeleton  # type: ignore[reportMissingImports]
             from utils.get_opt import get_opt  # type: ignore[reportMissingImports]
+            from utils import motion_process, paramUtil  # type: ignore[reportMissingImports]
             from utils.motion_process import recover_from_ric  # type: ignore[reportMissingImports]
 
         root_dir = self._checkpoints_dir / self._dataset_name / self._model_name
@@ -147,6 +152,9 @@ class MoMaskBvhGenerator:
             self._mean = np.load(self._checkpoints_dir / self._dataset_name / model_opt.vq_name / "meta" / "mean.npy")
             self._std = np.load(self._checkpoints_dir / self._dataset_name / model_opt.vq_name / "meta" / "std.npy")
             self._recover_from_ric = recover_from_ric
+            self._motion_process = motion_process
+            self._param_util = paramUtil
+            self._skeleton_cls = Skeleton
             self._loaded = True
         finally:
             os.chdir(old_cwd)
@@ -198,6 +206,178 @@ class MoMaskBvhGenerator:
         joint_data = pred_denorm[: int(motion_lengths[0])]
         joints = self._recover_from_ric(torch.from_numpy(joint_data).float(), 22).numpy().astype(np.float32)
         return joints
+
+    def _convert_joints_to_motion_features(self, source_joints: np.ndarray) -> np.ndarray:
+        if source_joints.ndim != 3 or source_joints.shape[1] != 22 or source_joints.shape[2] != 3:
+            raise RuntimeError("source_motion must be a [frames, 22, 3] joint sequence.")
+
+        assert self._motion_process is not None
+        assert self._param_util is not None
+        assert self._skeleton_cls is not None
+
+        motion_process = self._motion_process
+        param_util = self._param_util
+
+        n_raw_offsets = torch.from_numpy(param_util.t2m_raw_offsets)
+        target_skeleton = self._skeleton_cls(n_raw_offsets, param_util.t2m_kinematic_chain, "cpu")
+        target_offsets = target_skeleton.get_offsets_joints(torch.from_numpy(source_joints[0]).float())
+
+        motion_process.l_idx1, motion_process.l_idx2 = 5, 8
+        motion_process.fid_r, motion_process.fid_l = [8, 11], [7, 10]
+        motion_process.face_joint_indx = [2, 1, 17, 16]
+        motion_process.r_hip, motion_process.l_hip = 2, 1
+        motion_process.n_raw_offsets = n_raw_offsets
+        motion_process.kinematic_chain = param_util.t2m_kinematic_chain
+        motion_process.tgt_offsets = target_offsets
+
+        features, _, _, _ = motion_process.process_file(source_joints, feet_thre=0.002)
+        if features.ndim != 2 or features.shape[1] != 263:
+            raise RuntimeError("Failed to convert source joints into MoMask feature vectors.")
+
+        return features.astype(np.float32)
+
+    def _build_edit_mask(
+        self,
+        seq_len: int,
+        motion_length_frames: int,
+        source_fps: int,
+        edit_ranges: List[Tuple[float, float]],
+    ) -> torch.Tensor:
+        if seq_len <= 0:
+            raise RuntimeError("Edit mask cannot be created for an empty token sequence.")
+
+        edit_mask = torch.zeros((1, seq_len), dtype=torch.bool)
+        clip_duration = max(0.001, motion_length_frames / float(max(1, source_fps)))
+
+        for start_seconds, end_seconds in edit_ranges:
+            start_seconds = max(0.0, float(start_seconds))
+            end_seconds = max(start_seconds, float(end_seconds))
+            if end_seconds <= start_seconds:
+                continue
+
+            start_ratio = min(1.0, start_seconds / clip_duration)
+            end_ratio = min(1.0, end_seconds / clip_duration)
+            start_token = int(np.floor(start_ratio * seq_len))
+            end_token = int(np.ceil(end_ratio * seq_len))
+
+            start_token = max(0, min(seq_len - 1, start_token))
+            end_token = max(start_token + 1, min(seq_len, end_token))
+            edit_mask[:, start_token:end_token] = True
+
+        if not torch.any(edit_mask):
+            edit_mask[:, :] = True
+
+        return edit_mask
+
+    @torch.no_grad()
+    def edit_bvh(
+        self,
+        prompt: str,
+        fps: int,
+        seed: int,
+        source_joints: np.ndarray,
+        source_fps: int,
+        edit_ranges: List[Tuple[float, float]],
+    ) -> Tuple[bytes, str, str]:
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self._ensure_loaded(device)
+
+        assert self._vq_model is not None
+        assert self._mask_transformer is not None
+        assert self._res_transformer is not None
+        assert self._mean is not None
+        assert self._std is not None
+        assert self._recover_from_ric is not None
+
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+
+        source_features = self._convert_joints_to_motion_features(source_joints)
+        max_motion_length = 196
+        motion_length = max(4, min(max_motion_length, int(source_features.shape[0])))
+        motion_length = max(4, (motion_length // 4) * 4)
+
+        trimmed = source_features[:motion_length]
+        normalized = (trimmed - self._mean) / self._std
+        motion = torch.from_numpy(normalized)[None].to(device)
+
+        token_lens = torch.LongTensor([motion_length // 4]).to(device).long()
+        captions = [prompt]
+
+        tokens, _ = self._vq_model.encode(motion)
+        edit_mask = self._build_edit_mask(
+            seq_len=tokens.shape[1],
+            motion_length_frames=motion_length,
+            source_fps=max(1, int(source_fps or self._native_fps)),
+            edit_ranges=edit_ranges,
+        ).to(device)
+
+        mids = self._mask_transformer.edit(
+            captions,
+            tokens[..., 0].clone(),
+            token_lens,
+            timesteps=self._time_steps,
+            cond_scale=self._cond_scale,
+            temperature=self._temperature,
+            topk_filter_thres=self._topkr,
+            gsample=self._gumbel_sample,
+            force_mask=False,
+            edit_mask=edit_mask.clone(),
+        )
+        mids = self._res_transformer.generate(
+            mids,
+            captions,
+            token_lens,
+            temperature=1,
+            cond_scale=self._res_cond_scale,
+        )
+
+        pred_motions = self._vq_model.forward_decoder(mids)
+        pred_np = pred_motions[0].detach().cpu().numpy().astype(np.float32)
+        pred_denorm = pred_np * self._std + self._mean
+        joint_data = pred_denorm[:motion_length]
+        joints = self._recover_from_ric(torch.from_numpy(joint_data).float(), 22).numpy().astype(np.float32)
+
+        requested_fps = max(1, int(fps or self._native_fps))
+
+        with tempfile.TemporaryDirectory(prefix="motiongen_momask_edit_bvh_") as temp_dir:
+            output_path = Path(temp_dir) / "momask_edited.bvh"
+
+            old_cwd = Path.cwd()
+            try:
+                os.chdir(MOMASK_DIR)
+                converter = Joint2BVHConvertor()
+                converter.convert(joints, filename=str(output_path), iterations=100, foot_ik=False)
+            finally:
+                os.chdir(old_cwd)
+
+            bvh_text = output_path.read_text(encoding="utf-8")
+            bvh_text = re.sub(
+                r"(Frame Time:\s+)([\d\.]+)",
+                lambda match: f"{match.group(1)}{1.0 / requested_fps:.8f}",
+                bvh_text,
+                count=1,
+            )
+            data = bvh_text.encode("utf-8")
+
+        meta = json.dumps(
+            {
+                "model": "MoMask",
+                "pipeline": "momask_text_edit_bvh",
+                "prompt": prompt,
+                "seed": seed,
+                "requested_fps": requested_fps,
+                "native_fps": self._native_fps,
+                "native_frame_count": int(joints.shape[0]),
+                "native_joint_count": int(joints.shape[1]),
+                "source_native_frame_count": int(source_joints.shape[0]),
+                "source_fps": int(source_fps),
+                "edit_ranges": [[float(start), float(end)] for start, end in edit_ranges],
+                "checkpoint_name": self._model_name,
+                "residual_checkpoint_name": self._res_name,
+            }
+        )
+        return data, "momask_edited.bvh", meta
 
     def generate_bvh(self, prompt: str, fps: int, duration_seconds: float, seed: int) -> Tuple[bytes, str, str]:
         joints = self.generate_exact_joints(prompt=prompt, duration_seconds=duration_seconds, seed=seed)

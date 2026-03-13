@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 0}
   m_Name: MotionGenEditorSettings
   m_EditorClassIdentifier: Assembly-CSharp-firstpass::MotionGenEditorSettings
-  prompt: A person does a handstand.
+  prompt: A person walks forward.
   fps: 20
-  durationSeconds: 2
+  durationSeconds: 5
   seedText: 
-  generationName: 
+  generationName: MoMask walking
   versionCount: 1
-  model: 0
+  model: 1
   serverHost: 127.0.0.1
   serverPort: 50051
   autoApplyOnGenerate: 1

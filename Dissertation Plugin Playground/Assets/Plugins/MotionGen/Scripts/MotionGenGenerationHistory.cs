@@ -38,6 +38,19 @@ public class MotionGenGenerationItem
     public string postProcessedAtUtc;
     public MotionGenPostProcessSettings postProcessSettings = new MotionGenPostProcessSettings();
     public List<MotionGenContactWindow> reviewedContactWindows = new List<MotionGenContactWindow>();
+    public bool isEditResult;
+    public string sourceSessionId;
+    public string sourceItemId;
+    public string sourceClipAssetPath;
+    public string editPrompt;
+    public List<MotionGenEditRangeRecord> editRanges = new List<MotionGenEditRangeRecord>();
+}
+
+[Serializable]
+public class MotionGenEditRangeRecord
+{
+    public float startSeconds;
+    public float endSeconds;
 }
 
 [Serializable]
