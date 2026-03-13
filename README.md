@@ -23,8 +23,14 @@ The implemented pipeline today is:
 4. **Library + preview workflow** in the `MotionGen` editor window.
 5. **Root path editing** by placing path keys in the Scene view and baking corrected root translation back into the clip.
 6. **Optional post-processing** from the `Post` tab, producing a preserved reference clip plus a separate processed clip.
+7. **Windows-first local backend management** from Settings, including health checks and model install status.
 
 The current system is **BVH-only** and supports both `T2M_GPT` and `MOMASK`.
+
+Phase 2 status:
+
+- Windows-first local backend packaging/startup flow is implemented.
+- Manifest-driven model status/install tooling for `T2M-GPT` and `MoMask` is implemented.
 
 ---
 
@@ -119,6 +125,9 @@ The backend is a small gRPC service that currently exposes **BVH-only generation
 | `server/t2mgpt_exact_bvh.py` | T2M-GPT inference pipeline that produces exact BVH output |
 | `server/momask_bvh.py` | MoMask inference pipeline that produces BVH output |
 | `server/model_paths.py` | Import-isolation helpers for switching vendored model code safely |
+| `scripts/start_local_backend.ps1` | Windows local backend startup entrypoint |
+| `scripts/model_manager.py` | Manifest-driven model status/install command utility |
+| `packaging/backend_manifest.json` | Backend package + model artifact manifest |
 | `server/bvh_writer.py` | BVH writing utilities |
 | `protos/motion.proto` | Shared protobuf / gRPC contract |
 | `scripts/test_ping.py` | Simple connectivity test |
@@ -201,6 +210,14 @@ Accessed via **Window → MotionGen**, the current tabs are:
   - Create or refresh a preserved reference copy of the current source clip.
   - Auto-detect candidate hand/foot support contacts, then review and edit the windows before applying.
   - Generate a separate processed clip with root smoothing, motion smoothing, and support-limb contact locking.
+
+Local backend + model management (Phase 2):
+
+- Open **Settings** from the `MotionGen` toolbar.
+- Use **Ping Backend**, **Start Local Backend**, or **Stop Local Backend** for local process control.
+- Use **Refresh Model Status** to inspect `Installed`, `Missing`, or `Corrupt` checkpoint state.
+- Use **Install T2M-GPT** / **Install MoMask** for on-demand model installs.
+- Optional: set **Model Base URL** when manifest artifact URLs are blank.
 
 ### Animation Conversion Path
 
@@ -313,6 +330,31 @@ python app.py
 ```
 
 The server listens on `localhost:50051`.
+
+Windows local-start alternative (Phase 2):
+
+```powershell
+cd motion-backend
+./scripts/start_local_backend.ps1 -Port 50051
+```
+
+Or start it directly from Unity via **MotionGen Settings**.
+
+### 4.1 Model Status / Install (Phase 2)
+
+Manifest-driven model management CLI:
+
+```powershell
+cd motion-backend
+python scripts/model_manager.py status --manifest packaging/backend_manifest.json
+python scripts/model_manager.py install --manifest packaging/backend_manifest.json --model t2m_gpt --base-url <optional_base_url>
+python scripts/model_manager.py install --manifest packaging/backend_manifest.json --model momask --base-url <optional_base_url>
+```
+
+Notes:
+
+- If artifact URLs in `packaging/backend_manifest.json` are blank, provide `--base-url` or populate manifest URLs.
+- Checksum validation runs when `sha256` is provided in the manifest.
 
 ### 5. Use the Unity Tool
 

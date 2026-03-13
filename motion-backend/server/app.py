@@ -325,4 +325,8 @@ def serve(port: int = 50051):
 
 
 if __name__ == "__main__":
-    serve()
+    port_text = os.getenv("MOTIONGEN_BACKEND_PORT", "50051")
+    try:
+        serve(int(port_text))
+    except ValueError:
+        serve(50051)

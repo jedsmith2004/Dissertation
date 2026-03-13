@@ -195,6 +195,40 @@ Final result:
 
 ---
 
+# MotionGen Pipeline: Local Backend Packaging + Model Install (Phase 2)
+
+## **1. Backend Startup From Unity Settings**
+
+- User opens **MotionGen Settings**
+- Clicks **Start Local Backend**
+- Unity launches `motion-backend/scripts/start_local_backend.ps1`
+- PowerShell resolves Python executable and runs `server/app.py`
+- Unity pings gRPC health until backend is reachable
+
+## **2. Backend Health Check**
+
+- **Ping Backend** uses `MotionClient.PingAsync()`
+- Status text reports version + CUDA/device info when reachable
+
+## **3. Model Status Discovery**
+
+- **Refresh Model Status** invokes:
+  - `python scripts/model_manager.py status --manifest packaging/backend_manifest.json`
+- Script evaluates required files and returns per-model state:
+  - `installed`
+  - `missing`
+  - `corrupt` (checksum mismatch when checksum is configured)
+
+## **4. On-Demand Model Install**
+
+- **Install T2M-GPT** / **Install MoMask** invokes:
+  - `python scripts/model_manager.py install --manifest ... --model <id> [--base-url ...]`
+- Installer downloads artifact files to expected checkpoint paths
+- Optional checksum validation is applied when `sha256` is present
+- Unity refreshes status after install completes
+
+---
+
 # MotionGen Pipeline: Text-Guided Clip Editing (MoMask)
 
 Complete Phase 1 edit pipeline from selecting an existing clip in Library to saving edited non-destructive variants.

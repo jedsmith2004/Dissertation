@@ -47,6 +47,11 @@ public class MotionClient : IDisposable
         return await _client.GenerateBatchAsync(req);
     }
 
+    public async Task<PingResponse> PingAsync()
+    {
+        return await _client.PingAsync(new Empty());
+    }
+
     public async Task<EditReply> EditAsync(
         string prompt,
         int fps,

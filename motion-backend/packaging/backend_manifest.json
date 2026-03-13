@@ -1,0 +1,66 @@
+{
+  "version": "0.2.0",
+  "entrypoint": "server/app.py",
+  "requirements": "env/requirements.txt",
+  "model_cache_dir": "checkpoints",
+  "models": [
+    {
+      "id": "t2m_gpt",
+      "display_name": "T2M-GPT",
+      "install_root": "models/T2M-GPT/pretrained",
+      "required_files": [
+        {
+          "path": "models/T2M-GPT/pretrained/VQVAE/net_last.pth",
+          "sha256": ""
+        },
+        {
+          "path": "models/T2M-GPT/pretrained/VQTransformer_corruption05/net_best_fid.pth",
+          "sha256": ""
+        }
+      ],
+      "artifacts": [
+        {
+          "name": "vqvae_checkpoint",
+          "url": "",
+          "output_path": "models/T2M-GPT/pretrained/VQVAE/net_last.pth",
+          "sha256": ""
+        },
+        {
+          "name": "transformer_checkpoint",
+          "url": "",
+          "output_path": "models/T2M-GPT/pretrained/VQTransformer_corruption05/net_best_fid.pth",
+          "sha256": ""
+        }
+      ]
+    },
+    {
+      "id": "momask",
+      "display_name": "MoMask",
+      "install_root": "models/MoMask/checkpoints",
+      "required_files": [
+        {
+          "path": "models/MoMask/checkpoints/t2m/t2m_nlayer8_nhead6_ld384_ff1024_cdp0.1_rvq6ns/model/latest.tar",
+          "sha256": ""
+        },
+        {
+          "path": "models/MoMask/checkpoints/t2m/tres_nlayer8_ld384_ff1024_rvq6ns_cdp0.2_sw/model/net_best_fid.tar",
+          "sha256": ""
+        }
+      ],
+      "artifacts": [
+        {
+          "name": "momask_mask_transformer",
+          "url": "",
+          "output_path": "models/MoMask/checkpoints/t2m/t2m_nlayer8_nhead6_ld384_ff1024_cdp0.1_rvq6ns/model/latest.tar",
+          "sha256": ""
+        },
+        {
+          "name": "momask_residual_transformer",
+          "url": "",
+          "output_path": "models/MoMask/checkpoints/t2m/tres_nlayer8_ld384_ff1024_rvq6ns_cdp0.2_sw/model/net_best_fid.tar",
+          "sha256": ""
+        }
+      ]
+    }
+  ]
+}
