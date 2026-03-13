@@ -1,46 +1,14 @@
 import json
 import os
 import re
-import sys
 import tempfile
-from contextlib import contextmanager
 from pathlib import Path
 from typing import Optional, Tuple
 
 import numpy as np
 import torch
 
-BACKEND = Path(__file__).resolve().parents[1]
-T2MGPT = BACKEND / "models" / "T2M-GPT"
-MOMASK_DIR = BACKEND / "models" / "MoMask"
-
-
-@contextmanager
-def t2mgpt_path():
-    """Context manager that temporarily sets sys.path to include only T2M-GPT."""
-    original_path = sys.path.copy()
-    # Remove MoMask if present, ensure T2M-GPT is at front
-    sys.path = [p for p in sys.path if str(MOMASK_DIR) not in p]
-    if str(T2MGPT) not in sys.path:
-        sys.path.insert(0, str(T2MGPT))
-    try:
-        yield
-    finally:
-        sys.path = original_path
-
-
-@contextmanager
-def momask_path():
-    """Context manager that temporarily sets sys.path to include only MoMask."""
-    original_path = sys.path.copy()
-    # Remove T2M-GPT if present, ensure MoMask is at front
-    sys.path = [p for p in sys.path if str(T2MGPT) not in p]
-    if str(MOMASK_DIR) not in sys.path:
-        sys.path.insert(0, str(MOMASK_DIR))
-    try:
-        yield
-    finally:
-        sys.path = original_path
+from model_paths import MOMASK_DIR, T2MGPT_DIR, momask_path, t2mgpt_path
 
 
 # Import MoMask's Joint2BVH converter with isolated path
@@ -105,7 +73,7 @@ class T2MGPTExactBvhGenerator:
         )
 
         vq_model = vqvae.HumanVQVAE(args, 512, 512, 512, 2, 2, 512, 3, 3)
-        vq_ckpt = torch.load(T2MGPT / "pretrained" / "VQVAE" / "net_last.pth", map_location="cpu")
+        vq_ckpt = torch.load(T2MGPT_DIR / "pretrained" / "VQVAE" / "net_last.pth", map_location="cpu")
         vq_model.load_state_dict(vq_ckpt["net"], strict=True)
         vq_model.eval().to(device)
 
@@ -119,7 +87,7 @@ class T2MGPTExactBvhGenerator:
             drop_out_rate=0.1,
             fc_rate=4,
         )
-        trans_ckpt = torch.load(T2MGPT / "pretrained" / "VQTransformer_corruption05" / "net_best_fid.pth", map_location="cpu")
+        trans_ckpt = torch.load(T2MGPT_DIR / "pretrained" / "VQTransformer_corruption05" / "net_best_fid.pth", map_location="cpu")
         trans_encoder.load_state_dict(trans_ckpt["trans"], strict=True)
         trans_encoder.eval().to(device)
 
@@ -127,8 +95,8 @@ class T2MGPTExactBvhGenerator:
         self._clip_model = clip_model
         self._vq_model = vq_model
         self._trans_encoder = trans_encoder
-        self._mean = np.load(T2MGPT / "dataset" / "HumanML3D" / "Mean.npy")
-        self._std = np.load(T2MGPT / "dataset" / "HumanML3D" / "Std.npy")
+        self._mean = np.load(T2MGPT_DIR / "dataset" / "HumanML3D" / "Mean.npy")
+        self._std = np.load(T2MGPT_DIR / "dataset" / "HumanML3D" / "Std.npy")
         self._recover_from_ric = recover_from_ric
         self._loaded = True
 

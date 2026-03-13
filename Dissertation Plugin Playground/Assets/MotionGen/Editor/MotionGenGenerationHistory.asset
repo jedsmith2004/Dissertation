@@ -13,6 +13,678 @@ MonoBehaviour:
   m_Name: MotionGenGenerationHistory
   m_EditorClassIdentifier: 
   sessions:
+  - id: 20260313_040720_854_50f9
+    generationName: motiongen_20260313_040658
+    prompt: A person does a handstand.
+    exportDirectory: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+      Plugin Playground\MotionGenExports
+    mirrorDirectoryAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_040658_20260313_040720_854_50f9
+    createdAtUtc: 2026-03-13T04:07:20.9422520Z
+    versionCount: 1
+    usedRandomSeed: 1
+    baseSeed: 0
+    items:
+    - id: 2f82976bd6404febb2ba2ffcc25bc01f
+      displayName: motiongen_20260313_040658_v001
+      clipName: motiongen_20260313_040658_v001
+      externalBvhPath: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+        Plugin Playground\MotionGenExports\motiongen_20260313_040658_v001.bvh
+      mirroredBvhAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_040658_20260313_040720_854_50f9/motiongen_20260313_040658_v001.bvh
+      clipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_040658_20260313_040720_854_50f9\motiongen_20260313_040658_v001.anim
+      backendFilename: t2mgpt_generated_exact_v001_s522649427.bvh
+      metaJson: '{"model": "T2M-GPT", "pipeline": "exact_recover_from_ric_to_momask_bvh",
+        "prompt": "A person does a handstand.", "seed": 522649427, "requested_fps":
+        20, "native_frame_count": 88, "native_joint_count": 22, "duration_seconds_request":
+        2.0, "batch_index": 0, "batch_count": 1, "resolved_seed": 522649427, "seed_mode":
+        "random"}'
+      resolvedSeed: 522649427
+      pathEditLockY: 0
+      pathEditKeys:
+      - id: f64624d536d44f60b8de62936fdfa162
+        time: 0
+        position: {x: 0, y: 0, z: 0}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+      - id: e557d0fc0a1c461c804cc8f2690ab244
+        time: 4.35
+        position: {x: 0, y: 0, z: 4.4734}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+      postProcessingEnabled: 0
+      referenceClipAssetPath: 
+      referenceSourceClipAssetPath: 
+      referenceSourceLastWriteTicks: 0
+      processedClipAssetPath: 
+      postProcessedSourceLastWriteTicks: 0
+      postProcessedAtUtc: 
+      postProcessSettings:
+        enableRootSmoothing: 1
+        rootSmoothingWindow: 2
+        rootSmoothingBlend: 0.45
+        enableMotionSmoothing: 1
+        motionSmoothingWindow: 2
+        motionSmoothingBlend: 0.25
+        enableContactLocking: 1
+        contactLockFeet: 1
+        contactLockHands: 0
+        contactVelocityThreshold: 0.04
+        contactHeightThreshold: 0.08
+        contactMinDuration: 0.12
+        ikIterations: 6
+      reviewedContactWindows: []
+  - id: 20260313_040630_457_4877
+    generationName: motiongen_20260313_040624
+    prompt: A person does a handstand.
+    exportDirectory: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+      Plugin Playground\MotionGenExports
+    mirrorDirectoryAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_040624_20260313_040630_457_4877
+    createdAtUtc: 2026-03-13T04:06:30.5456757Z
+    versionCount: 1
+    usedRandomSeed: 1
+    baseSeed: 0
+    items:
+    - id: 288eb12c3c88420cabbdfab9f611c23f
+      displayName: motiongen_20260313_040624_v001
+      clipName: motiongen_20260313_040624_v001
+      externalBvhPath: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+        Plugin Playground\MotionGenExports\motiongen_20260313_040624_v001.bvh
+      mirroredBvhAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_040624_20260313_040630_457_4877/motiongen_20260313_040624_v001.bvh
+      clipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_040624_20260313_040630_457_4877\motiongen_20260313_040624_v001.anim
+      backendFilename: momask_generated_v001_s1267364292.bvh
+      metaJson: '{"model": "MoMask", "pipeline": "momask_text_to_bvh", "prompt":
+        "A person does a handstand.", "seed": 1267364292, "requested_fps": 20, "native_fps":
+        20, "native_frame_count": 40, "native_joint_count": 22, "duration_seconds_request":
+        2.0, "checkpoints_dir": "C:\\Users\\jack\\OneDrive\\Desktop\\Coding\\Dissertation\\motion-backend\\models\\MoMask\\checkpoints",
+        "checkpoint_name": "t2m_nlayer8_nhead6_ld384_ff1024_cdp0.1_rvq6ns", "residual_checkpoint_name":
+        "tres_nlayer8_ld384_ff1024_rvq6ns_cdp0.2_sw", "batch_index": 0, "batch_count":
+        1, "resolved_seed": 1267364292, "seed_mode": "random"}'
+      resolvedSeed: 1267364292
+      pathEditLockY: 1
+      pathEditKeys: []
+      postProcessingEnabled: 0
+      referenceClipAssetPath: 
+      referenceSourceClipAssetPath: 
+      referenceSourceLastWriteTicks: 0
+      processedClipAssetPath: 
+      postProcessedSourceLastWriteTicks: 0
+      postProcessedAtUtc: 
+      postProcessSettings:
+        enableRootSmoothing: 1
+        rootSmoothingWindow: 2
+        rootSmoothingBlend: 0.45
+        enableMotionSmoothing: 1
+        motionSmoothingWindow: 2
+        motionSmoothingBlend: 0.25
+        enableContactLocking: 1
+        contactLockFeet: 1
+        contactLockHands: 0
+        contactVelocityThreshold: 0.04
+        contactHeightThreshold: 0.08
+        contactMinDuration: 0.12
+        ikIterations: 6
+      reviewedContactWindows: []
+  - id: 20260313_035934_994_397f
+    generationName: motiongen_20260313_035916
+    prompt: A person walks forward.
+    exportDirectory: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+      Plugin Playground\MotionGenExports
+    mirrorDirectoryAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_035916_20260313_035934_994_397f
+    createdAtUtc: 2026-03-13T03:59:35.0814116Z
+    versionCount: 1
+    usedRandomSeed: 1
+    baseSeed: 0
+    items:
+    - id: 31805d1bf0884a399ce52891d1a3162f
+      displayName: motiongen_20260313_035916_v001
+      clipName: motiongen_20260313_035916_v001
+      externalBvhPath: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+        Plugin Playground\MotionGenExports\motiongen_20260313_035916_v001.bvh
+      mirroredBvhAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_035916_20260313_035934_994_397f/motiongen_20260313_035916_v001.bvh
+      clipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_035916_20260313_035934_994_397f\motiongen_20260313_035916_v001.anim
+      backendFilename: momask_generated_v001_s1744662559.bvh
+      metaJson: '{"model": "MoMask", "pipeline": "momask_text_to_bvh", "prompt":
+        "A person walks forward.", "seed": 1744662559, "requested_fps": 20, "native_fps":
+        20, "native_frame_count": 40, "native_joint_count": 22, "duration_seconds_request":
+        2.0, "checkpoints_dir": "C:\\Users\\jack\\OneDrive\\Desktop\\Coding\\Dissertation\\motion-backend\\models\\MoMask\\checkpoints",
+        "checkpoint_name": "t2m_nlayer8_nhead6_ld384_ff1024_cdp0.1_rvq6ns", "residual_checkpoint_name":
+        "tres_nlayer8_ld384_ff1024_rvq6ns_cdp0.2_sw", "batch_index": 0, "batch_count":
+        1, "resolved_seed": 1744662559, "seed_mode": "random"}'
+      resolvedSeed: 1744662559
+      pathEditLockY: 0
+      pathEditKeys:
+      - id: dcae68daa79a4d7ca7ef2d567c6314c9
+        time: 0
+        position: {x: 0.055279016, y: -5.2367463, z: -13.600965}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+      - id: 28188e0b22304973ba872271913c20a8
+        time: 1.95
+        position: {x: 0.04603363, y: -5.0370893, z: -10.429585}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+      postProcessingEnabled: 0
+      referenceClipAssetPath: 
+      referenceSourceClipAssetPath: 
+      referenceSourceLastWriteTicks: 0
+      processedClipAssetPath: 
+      postProcessedSourceLastWriteTicks: 0
+      postProcessedAtUtc: 
+      postProcessSettings:
+        enableRootSmoothing: 1
+        rootSmoothingWindow: 2
+        rootSmoothingBlend: 0.45
+        enableMotionSmoothing: 1
+        motionSmoothingWindow: 2
+        motionSmoothingBlend: 0.25
+        enableContactLocking: 1
+        contactLockFeet: 1
+        contactLockHands: 0
+        contactVelocityThreshold: 0.04
+        contactHeightThreshold: 0.08
+        contactMinDuration: 0.12
+        ikIterations: 6
+      reviewedContactWindows: []
+  - id: 20260313_032745_879_58e9
+    generationName: motiongen_20260313_032722
+    prompt: A person walks forward.
+    exportDirectory: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+      Plugin Playground\MotionGenExports
+    mirrorDirectoryAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_032722_20260313_032745_879_58e9
+    createdAtUtc: 2026-03-13T03:27:45.9390425Z
+    versionCount: 3
+    usedRandomSeed: 1
+    baseSeed: 0
+    items:
+    - id: a3472157c0794ad3b03b8771a7684502
+      displayName: motiongen_20260313_032722_v001
+      clipName: motiongen_20260313_032722_v001
+      externalBvhPath: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+        Plugin Playground\MotionGenExports\motiongen_20260313_032722_v001.bvh
+      mirroredBvhAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_032722_20260313_032745_879_58e9/motiongen_20260313_032722_v001.bvh
+      clipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_032722_20260313_032745_879_58e9\motiongen_20260313_032722_v001.anim
+      backendFilename: t2mgpt_generated_exact_v001_s680915404.bvh
+      metaJson: '{"model": "T2M-GPT", "pipeline": "exact_recover_from_ric_to_momask_bvh",
+        "prompt": "A person walks forward.", "seed": 680915404, "requested_fps":
+        20, "native_frame_count": 48, "native_joint_count": 22, "duration_seconds_request":
+        2.0, "batch_index": 0, "batch_count": 3, "resolved_seed": 680915404, "seed_mode":
+        "random"}'
+      resolvedSeed: 680915404
+      pathEditLockY: 1
+      pathEditKeys: []
+      postProcessingEnabled: 1
+      referenceClipAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_032722_20260313_032745_879_58e9/motiongen_20260313_032722_v001_reference.anim
+      referenceSourceClipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_032722_20260313_032745_879_58e9\motiongen_20260313_032722_v001.anim
+      referenceSourceLastWriteTicks: 639089692661491800
+      processedClipAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_032722_20260313_032745_879_58e9/motiongen_20260313_032722_v001_post.anim
+      postProcessedSourceLastWriteTicks: 639089692661491800
+      postProcessedAtUtc: 2026-03-13T03:32:35.0283586Z
+      postProcessSettings:
+        enableRootSmoothing: 1
+        rootSmoothingWindow: 2
+        rootSmoothingBlend: 0.45
+        enableMotionSmoothing: 1
+        motionSmoothingWindow: 2
+        motionSmoothingBlend: 0.25
+        enableContactLocking: 1
+        contactLockFeet: 1
+        contactLockHands: 0
+        contactVelocityThreshold: 0.04
+        contactHeightThreshold: 0.08
+        contactMinDuration: 0.12
+        ikIterations: 6
+      reviewedContactWindows:
+      - id: 7f88ae4d254247f3b1aa49fee6f54d4f
+        limb: 0
+        startTime: 0.05
+        endTime: 0.15
+        enabled: 1
+        autoDetected: 1
+        anchorPosition: {x: 1.4015952, y: -5.7299232, z: -7.8643026}
+      - id: fbd1606963b645ceb213795802475a73
+        limb: 1
+        startTime: 0.4
+        endTime: 0.75
+        enabled: 1
+        autoDetected: 1
+        anchorPosition: {x: 1.6106559, y: -5.994137, z: -6.9680624}
+      - id: f2f9ddabc56d415f9baba7682e21c931
+        limb: 1
+        startTime: 1.6
+        endTime: 2
+        enabled: 1
+        autoDetected: 1
+        anchorPosition: {x: 1.6106559, y: -5.994137, z: -6.9680624}
+      - id: 09407a045d27479892b83e824ba795d2
+        limb: 0
+        startTime: 1.9
+        endTime: 2.15
+        enabled: 1
+        autoDetected: 1
+        anchorPosition: {x: 1.3837882, y: -5.9579124, z: -6.703292}
+    - id: 35b2c823453446da8e4f8c682998ed50
+      displayName: motiongen_20260313_032722_v002
+      clipName: motiongen_20260313_032722_v002
+      externalBvhPath: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+        Plugin Playground\MotionGenExports\motiongen_20260313_032722_v002.bvh
+      mirroredBvhAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_032722_20260313_032745_879_58e9/motiongen_20260313_032722_v002.bvh
+      clipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_032722_20260313_032745_879_58e9\motiongen_20260313_032722_v002.anim
+      backendFilename: t2mgpt_generated_exact_v002_s1280787802.bvh
+      metaJson: '{"model": "T2M-GPT", "pipeline": "exact_recover_from_ric_to_momask_bvh",
+        "prompt": "A person walks forward.", "seed": 1280787802, "requested_fps":
+        20, "native_frame_count": 116, "native_joint_count": 22, "duration_seconds_request":
+        2.0, "batch_index": 1, "batch_count": 3, "resolved_seed": 1280787802, "seed_mode":
+        "random"}'
+      resolvedSeed: 1280787802
+      pathEditLockY: 1
+      pathEditKeys: []
+      postProcessingEnabled: 1
+      referenceClipAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_032722_20260313_032745_879_58e9/motiongen_20260313_032722_v002_reference.anim
+      referenceSourceClipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_032722_20260313_032745_879_58e9\motiongen_20260313_032722_v002.anim
+      referenceSourceLastWriteTicks: 639089692663517388
+      processedClipAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_032722_20260313_032745_879_58e9/motiongen_20260313_032722_v002_post.anim
+      postProcessedSourceLastWriteTicks: 639089692663517388
+      postProcessedAtUtc: 2026-03-13T03:33:53.9006699Z
+      postProcessSettings:
+        enableRootSmoothing: 1
+        rootSmoothingWindow: 2
+        rootSmoothingBlend: 0.45
+        enableMotionSmoothing: 1
+        motionSmoothingWindow: 2
+        motionSmoothingBlend: 0.25
+        enableContactLocking: 0
+        contactLockFeet: 1
+        contactLockHands: 0
+        contactVelocityThreshold: 0.04
+        contactHeightThreshold: 0.08
+        contactMinDuration: 0.12
+        ikIterations: 6
+      reviewedContactWindows:
+      - id: b89a8cf4cf764ab4807883635ca3e4cb
+        limb: 0
+        startTime: 0
+        endTime: 1.2
+        enabled: 1
+        autoDetected: 1
+        anchorPosition: {x: -0.15768915, y: -5.605661, z: -0.08714008}
+      - id: 872453548a5846d89dc19154d95ac39c
+        limb: 1
+        startTime: 0
+        endTime: 0.9
+        enabled: 1
+        autoDetected: 1
+        anchorPosition: {x: 0.16056278, y: -5.608665, z: -0.073106766}
+      - id: f4801cfec8c049afa6a1ee7a8dfbd187
+        limb: 1
+        startTime: 4.25
+        endTime: 5.75
+        enabled: 1
+        autoDetected: 1
+        anchorPosition: {x: 0.16056278, y: -5.608665, z: -0.073106766}
+      - id: a8712878cf9e42b9983394b28459285a
+        limb: 0
+        startTime: 4.55
+        endTime: 5.75
+        enabled: 1
+        autoDetected: 1
+        anchorPosition: {x: 0.15131596, y: -5.5898128, z: -0.39843178}
+    - id: 3408bac0da074f3e9977c2d46f19ff2c
+      displayName: motiongen_20260313_032722_v003
+      clipName: motiongen_20260313_032722_v003
+      externalBvhPath: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+        Plugin Playground\MotionGenExports\motiongen_20260313_032722_v003.bvh
+      mirroredBvhAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_032722_20260313_032745_879_58e9/motiongen_20260313_032722_v003.bvh
+      clipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_032722_20260313_032745_879_58e9\motiongen_20260313_032722_v003.anim
+      backendFilename: t2mgpt_generated_exact_v003_s1138709959.bvh
+      metaJson: '{"model": "T2M-GPT", "pipeline": "exact_recover_from_ric_to_momask_bvh",
+        "prompt": "A person walks forward.", "seed": 1138709959, "requested_fps":
+        20, "native_frame_count": 72, "native_joint_count": 22, "duration_seconds_request":
+        2.0, "batch_index": 2, "batch_count": 3, "resolved_seed": 1138709959, "seed_mode":
+        "random"}'
+      resolvedSeed: 1138709959
+      pathEditLockY: 1
+      pathEditKeys: []
+      postProcessingEnabled: 0
+      referenceClipAssetPath: 
+      referenceSourceClipAssetPath: 
+      referenceSourceLastWriteTicks: 0
+      processedClipAssetPath: 
+      postProcessedSourceLastWriteTicks: 0
+      postProcessedAtUtc: 
+      postProcessSettings:
+        enableRootSmoothing: 1
+        rootSmoothingWindow: 2
+        rootSmoothingBlend: 0.45
+        enableMotionSmoothing: 1
+        motionSmoothingWindow: 2
+        motionSmoothingBlend: 0.25
+        enableContactLocking: 1
+        contactLockFeet: 1
+        contactLockHands: 0
+        contactVelocityThreshold: 0.04
+        contactHeightThreshold: 0.08
+        contactMinDuration: 0.12
+        ikIterations: 6
+      reviewedContactWindows: []
+  - id: 20260313_023402_167_b02b
+    generationName: motiongen_20260313_023341
+    prompt: A person walks forward.
+    exportDirectory: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+      Plugin Playground\MotionGenExports
+    mirrorDirectoryAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_023341_20260313_023402_167_b02b
+    createdAtUtc: 2026-03-13T02:34:02.2200095Z
+    versionCount: 3
+    usedRandomSeed: 1
+    baseSeed: 0
+    items:
+    - id: 2321100df1f342a7ae3ba63d2edadb15
+      displayName: motiongen_20260313_023341_v001
+      clipName: motiongen_20260313_023341_v001
+      externalBvhPath: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+        Plugin Playground\MotionGenExports\motiongen_20260313_023341_v001.bvh
+      mirroredBvhAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_023341_20260313_023402_167_b02b/motiongen_20260313_023341_v001.bvh
+      clipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_023341_20260313_023402_167_b02b\motiongen_20260313_023341_v001.anim
+      backendFilename: t2mgpt_generated_exact_v001_s805276133.bvh
+      metaJson: '{"model": "T2M-GPT", "pipeline": "exact_recover_from_ric_to_momask_bvh",
+        "prompt": "A person walks forward.", "seed": 805276133, "requested_fps":
+        20, "native_frame_count": 80, "native_joint_count": 22, "duration_seconds_request":
+        2.0, "batch_index": 0, "batch_count": 3, "resolved_seed": 805276133, "seed_mode":
+        "random"}'
+      resolvedSeed: 805276133
+      pathEditLockY: 0
+      pathEditKeys:
+      - id: b1084f5f782646f5bce49aab22016671
+        time: 0
+        position: {x: -0.04669706, y: 0, z: 0.005585505}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+      - id: a7eecfb4e4a44013a68ccc19758ba163
+        time: 3.95
+        position: {x: -1.9657643, y: 0, z: 7.4610944}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+      postProcessingEnabled: 1
+      referenceClipAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_023341_20260313_023402_167_b02b/motiongen_20260313_023341_v001_reference.anim
+      referenceSourceClipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_023341_20260313_023402_167_b02b\motiongen_20260313_023341_v001.anim
+      referenceSourceLastWriteTicks: 639089661532756211
+      processedClipAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_023341_20260313_023402_167_b02b/motiongen_20260313_023341_v001_post.anim
+      postProcessedSourceLastWriteTicks: 639089661532756211
+      postProcessedAtUtc: 2026-03-13T02:36:32.5328001Z
+      postProcessSettings:
+        enableRootSmoothing: 1
+        rootSmoothingWindow: 2
+        rootSmoothingBlend: 0.45
+        enableMotionSmoothing: 1
+        motionSmoothingWindow: 2
+        motionSmoothingBlend: 0.25
+        enableContactLocking: 1
+        contactLockFeet: 1
+        contactLockHands: 0
+        contactVelocityThreshold: 0.04
+        contactHeightThreshold: 0.08
+        contactMinDuration: 0.12
+        ikIterations: 6
+      reviewedContactWindows: []
+    - id: 57356ffdb2414e32ba938b7289ff5df4
+      displayName: motiongen_20260313_023341_v002
+      clipName: motiongen_20260313_023341_v002
+      externalBvhPath: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+        Plugin Playground\MotionGenExports\motiongen_20260313_023341_v002.bvh
+      mirroredBvhAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_023341_20260313_023402_167_b02b/motiongen_20260313_023341_v002.bvh
+      clipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_023341_20260313_023402_167_b02b\motiongen_20260313_023341_v002.anim
+      backendFilename: t2mgpt_generated_exact_v002_s342176241.bvh
+      metaJson: '{"model": "T2M-GPT", "pipeline": "exact_recover_from_ric_to_momask_bvh",
+        "prompt": "A person walks forward.", "seed": 342176241, "requested_fps":
+        20, "native_frame_count": 120, "native_joint_count": 22, "duration_seconds_request":
+        2.0, "batch_index": 1, "batch_count": 3, "resolved_seed": 342176241, "seed_mode":
+        "random"}'
+      resolvedSeed: 342176241
+      pathEditLockY: 1
+      pathEditKeys: []
+      postProcessingEnabled: 1
+      referenceClipAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_023341_20260313_023402_167_b02b/motiongen_20260313_023341_v002_reference.anim
+      referenceSourceClipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_023341_20260313_023402_167_b02b\motiongen_20260313_023341_v002.anim
+      referenceSourceLastWriteTicks: 639089660426276774
+      processedClipAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_023341_20260313_023402_167_b02b/motiongen_20260313_023341_v002_post.anim
+      postProcessedSourceLastWriteTicks: 639089660426276774
+      postProcessedAtUtc: 2026-03-13T02:46:33.3762832Z
+      postProcessSettings:
+        enableRootSmoothing: 1
+        rootSmoothingWindow: 2
+        rootSmoothingBlend: 0.45
+        enableMotionSmoothing: 1
+        motionSmoothingWindow: 2
+        motionSmoothingBlend: 0.25
+        enableContactLocking: 1
+        contactLockFeet: 1
+        contactLockHands: 0
+        contactVelocityThreshold: 0.04
+        contactHeightThreshold: 0.08
+        contactMinDuration: 0.12
+        ikIterations: 6
+      reviewedContactWindows:
+      - id: 006d273e085443ccb1686add66e17968
+        limb: 1
+        startTime: 4.6
+        endTime: 4.95
+        enabled: 1
+        autoDetected: 1
+        anchorPosition: {x: 105.621086, y: -5.6351337, z: -241.02869}
+      - id: 69d40781f2904497a52c4f92ea7604db
+        limb: 0
+        startTime: 4.65
+        endTime: 4.9
+        enabled: 1
+        autoDetected: 1
+        anchorPosition: {x: 105.43824, y: -5.6383185, z: -241.38165}
+    - id: 1272840543f344a0a09d894f25326463
+      displayName: motiongen_20260313_023341_v003
+      clipName: motiongen_20260313_023341_v003
+      externalBvhPath: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+        Plugin Playground\MotionGenExports\motiongen_20260313_023341_v003.bvh
+      mirroredBvhAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_023341_20260313_023402_167_b02b/motiongen_20260313_023341_v003.bvh
+      clipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_023341_20260313_023402_167_b02b\motiongen_20260313_023341_v003.anim
+      backendFilename: t2mgpt_generated_exact_v003_s842496925.bvh
+      metaJson: '{"model": "T2M-GPT", "pipeline": "exact_recover_from_ric_to_momask_bvh",
+        "prompt": "A person walks forward.", "seed": 842496925, "requested_fps":
+        20, "native_frame_count": 48, "native_joint_count": 22, "duration_seconds_request":
+        2.0, "batch_index": 2, "batch_count": 3, "resolved_seed": 842496925, "seed_mode":
+        "random"}'
+      resolvedSeed: 842496925
+      pathEditLockY: 0
+      pathEditKeys:
+      - id: a223703f878b49f9be3e03e1a350e34d
+        time: 0
+        position: {x: -0.012668038, y: -4.7673326, z: -0.08918166}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+      - id: 221942eae2334c7585cce7c5d48bfeef
+        time: 0.78333336
+        position: {x: -12.034435, y: -4.6602006, z: -123.77325}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+      - id: ced237e550014c7daad2b839fcde6bcd
+        time: 1.5666667
+        position: {x: -32.909485, y: -4.5932593, z: -269.04373}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+      - id: b41ffdc60bbd4a84abc31f9f951c75ea
+        time: 2.3500001
+        position: {x: -28.15849, y: -4.7912154, z: -367.72885}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+      postProcessingEnabled: 1
+      referenceClipAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_023341_20260313_023402_167_b02b/motiongen_20260313_023341_v003_reference.anim
+      referenceSourceClipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_023341_20260313_023402_167_b02b\motiongen_20260313_023341_v003.anim
+      referenceSourceLastWriteTicks: 639089687514134717
+      processedClipAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_023341_20260313_023402_167_b02b/motiongen_20260313_023341_v003_post.anim
+      postProcessedSourceLastWriteTicks: 639089687514134717
+      postProcessedAtUtc: 2026-03-13T03:27:10.7871920Z
+      postProcessSettings:
+        enableRootSmoothing: 1
+        rootSmoothingWindow: 2
+        rootSmoothingBlend: 0.45
+        enableMotionSmoothing: 1
+        motionSmoothingWindow: 2
+        motionSmoothingBlend: 0.25
+        enableContactLocking: 1
+        contactLockFeet: 1
+        contactLockHands: 0
+        contactVelocityThreshold: 0.04
+        contactHeightThreshold: 0.08
+        contactMinDuration: 0.12
+        ikIterations: 6
+      reviewedContactWindows:
+      - id: caf04096d9824046a85db0d076b15344
+        limb: 0
+        startTime: 0.1
+        endTime: 0.6
+        enabled: 1
+        autoDetected: 1
+        anchorPosition: {x: -1.6929868, y: -5.566807, z: -15.815328}
+      - id: 8a4853da93b646549173ac76be60ad6f
+        limb: 1
+        startTime: 0.7
+        endTime: 1.2
+        enabled: 1
+        autoDetected: 1
+        anchorPosition: {x: -1.3723224, y: -5.611492, z: -15.273709}
+      - id: f445b3ec0e1748f2b2637d5fd31e7d0d
+        limb: 0
+        startTime: 1.3
+        endTime: 1.85
+        enabled: 1
+        autoDetected: 1
+        anchorPosition: {x: -1.6119999, y: -5.677883, z: -14.507382}
+      - id: 2cbd6836b46944628cd1b820215e4317
+        limb: 1
+        startTime: 1.85
+        endTime: 2.3500001
+        enabled: 1
+        autoDetected: 1
+        anchorPosition: {x: -1.3869938, y: -5.703335, z: -13.959744}
+  - id: 20260313_022919_760_c989
+    generationName: motiongen_20260313_022857
+    prompt: A person does a forward roll.
+    exportDirectory: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+      Plugin Playground\MotionGenExports
+    mirrorDirectoryAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_022857_20260313_022919_760_c989
+    createdAtUtc: 2026-03-13T02:29:19.8221579Z
+    versionCount: 3
+    usedRandomSeed: 1
+    baseSeed: 0
+    items:
+    - id: 212c1271cc2f4626922c5e9b473d0a05
+      displayName: motiongen_20260313_022857_v001
+      clipName: motiongen_20260313_022857_v001
+      externalBvhPath: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+        Plugin Playground\MotionGenExports\motiongen_20260313_022857_v001.bvh
+      mirroredBvhAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_022857_20260313_022919_760_c989/motiongen_20260313_022857_v001.bvh
+      clipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_022857_20260313_022919_760_c989\motiongen_20260313_022857_v001.anim
+      backendFilename: t2mgpt_generated_exact_v001_s1079742607.bvh
+      metaJson: '{"model": "T2M-GPT", "pipeline": "exact_recover_from_ric_to_momask_bvh",
+        "prompt": "A person does a forward roll.", "seed": 1079742607, "requested_fps":
+        20, "native_frame_count": 56, "native_joint_count": 22, "duration_seconds_request":
+        2.0, "batch_index": 0, "batch_count": 3, "resolved_seed": 1079742607, "seed_mode":
+        "random"}'
+      resolvedSeed: 1079742607
+      pathEditLockY: 0
+      pathEditKeys:
+      - id: cfb2319da8464c89b5085f123e89940c
+        time: 0
+        position: {x: 0.5095763, y: -4.590903, z: 5.1909723}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+      - id: 3c0c2dc9798e4282ae251a757bd6268f
+        time: 2.75
+        position: {x: -0.048565906, y: -4.618075, z: 13.755922}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+      postProcessingEnabled: 1
+      referenceClipAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_022857_20260313_022919_760_c989/motiongen_20260313_022857_v001_reference.anim
+      referenceSourceClipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_022857_20260313_022919_760_c989\motiongen_20260313_022857_v001.anim
+      referenceSourceLastWriteTicks: 639089658825581509
+      processedClipAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_022857_20260313_022919_760_c989/motiongen_20260313_022857_v001_post.anim
+      postProcessedSourceLastWriteTicks: 639089658825581509
+      postProcessedAtUtc: 2026-03-13T02:32:26.9407435Z
+      postProcessSettings:
+        enableRootSmoothing: 1
+        rootSmoothingWindow: 2
+        rootSmoothingBlend: 0.45
+        enableMotionSmoothing: 1
+        motionSmoothingWindow: 2
+        motionSmoothingBlend: 0.25
+        enableContactLocking: 1
+        contactLockFeet: 1
+        contactLockHands: 0
+        contactVelocityThreshold: 0.04
+        contactHeightThreshold: 0.08
+        contactMinDuration: 0.12
+        ikIterations: 6
+      reviewedContactWindows: []
+    - id: 69f044104f234104ada80b5cd13a8566
+      displayName: motiongen_20260313_022857_v002
+      clipName: motiongen_20260313_022857_v002
+      externalBvhPath: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+        Plugin Playground\MotionGenExports\motiongen_20260313_022857_v002.bvh
+      mirroredBvhAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_022857_20260313_022919_760_c989/motiongen_20260313_022857_v002.bvh
+      clipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_022857_20260313_022919_760_c989\motiongen_20260313_022857_v002.anim
+      backendFilename: t2mgpt_generated_exact_v002_s787668024.bvh
+      metaJson: '{"model": "T2M-GPT", "pipeline": "exact_recover_from_ric_to_momask_bvh",
+        "prompt": "A person does a forward roll.", "seed": 787668024, "requested_fps":
+        20, "native_frame_count": 52, "native_joint_count": 22, "duration_seconds_request":
+        2.0, "batch_index": 1, "batch_count": 3, "resolved_seed": 787668024, "seed_mode":
+        "random"}'
+      resolvedSeed: 787668024
+      pathEditLockY: 1
+      pathEditKeys: []
+      postProcessingEnabled: 0
+      referenceClipAssetPath: 
+      referenceSourceClipAssetPath: 
+      referenceSourceLastWriteTicks: 0
+      processedClipAssetPath: 
+      postProcessedSourceLastWriteTicks: 0
+      postProcessedAtUtc: 
+      postProcessSettings:
+        enableRootSmoothing: 1
+        rootSmoothingWindow: 2
+        rootSmoothingBlend: 0.45
+        enableMotionSmoothing: 1
+        motionSmoothingWindow: 2
+        motionSmoothingBlend: 0.25
+        enableContactLocking: 1
+        contactLockFeet: 1
+        contactLockHands: 0
+        contactVelocityThreshold: 0.04
+        contactHeightThreshold: 0.08
+        contactMinDuration: 0.12
+        ikIterations: 6
+      reviewedContactWindows: []
+    - id: 47aa278b6ae94c40ad35905d0b0aac17
+      displayName: motiongen_20260313_022857_v003
+      clipName: motiongen_20260313_022857_v003
+      externalBvhPath: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+        Plugin Playground\MotionGenExports\motiongen_20260313_022857_v003.bvh
+      mirroredBvhAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_022857_20260313_022919_760_c989/motiongen_20260313_022857_v003.bvh
+      clipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_022857_20260313_022919_760_c989\motiongen_20260313_022857_v003.anim
+      backendFilename: t2mgpt_generated_exact_v003_s1303312094.bvh
+      metaJson: '{"model": "T2M-GPT", "pipeline": "exact_recover_from_ric_to_momask_bvh",
+        "prompt": "A person does a forward roll.", "seed": 1303312094, "requested_fps":
+        20, "native_frame_count": 52, "native_joint_count": 22, "duration_seconds_request":
+        2.0, "batch_index": 2, "batch_count": 3, "resolved_seed": 1303312094, "seed_mode":
+        "random"}'
+      resolvedSeed: 1303312094
+      pathEditLockY: 1
+      pathEditKeys: []
+      postProcessingEnabled: 0
+      referenceClipAssetPath: 
+      referenceSourceClipAssetPath: 
+      referenceSourceLastWriteTicks: 0
+      processedClipAssetPath: 
+      postProcessedSourceLastWriteTicks: 0
+      postProcessedAtUtc: 
+      postProcessSettings:
+        enableRootSmoothing: 1
+        rootSmoothingWindow: 2
+        rootSmoothingBlend: 0.45
+        enableMotionSmoothing: 1
+        motionSmoothingWindow: 2
+        motionSmoothingBlend: 0.25
+        enableContactLocking: 1
+        contactLockFeet: 1
+        contactLockHands: 0
+        contactVelocityThreshold: 0.04
+        contactHeightThreshold: 0.08
+        contactMinDuration: 0.12
+        ikIterations: 6
+      reviewedContactWindows: []
   - id: 20260313_001155_392_3de7
     generationName: motiongen_20260313_001149
     prompt: A person does a forward roll.
@@ -44,6 +716,28 @@ MonoBehaviour:
         time: 0
         position: {x: -0.1061462, y: 0, z: -0.4293585}
         rotation: {x: 0, y: 0, z: 0, w: 1}
+      postProcessingEnabled: 0
+      referenceClipAssetPath: 
+      referenceSourceClipAssetPath: 
+      referenceSourceLastWriteTicks: 0
+      processedClipAssetPath: 
+      postProcessedSourceLastWriteTicks: 0
+      postProcessedAtUtc: 
+      postProcessSettings:
+        enableRootSmoothing: 1
+        rootSmoothingWindow: 2
+        rootSmoothingBlend: 0.45
+        enableMotionSmoothing: 1
+        motionSmoothingWindow: 2
+        motionSmoothingBlend: 0.25
+        enableContactLocking: 1
+        contactLockFeet: 1
+        contactLockHands: 0
+        contactVelocityThreshold: 0.04
+        contactHeightThreshold: 0.08
+        contactMinDuration: 0.12
+        ikIterations: 6
+      reviewedContactWindows: []
   - id: 20260312_231426_089_e17a
     generationName: motiongen_20260312_231402
     prompt: A person does a handstand.
@@ -75,6 +769,28 @@ MonoBehaviour:
         time: 0
         position: {x: -0.016328221, y: 0, z: -0.045940462}
         rotation: {x: 0, y: 0, z: 0, w: 1}
+      postProcessingEnabled: 0
+      referenceClipAssetPath: 
+      referenceSourceClipAssetPath: 
+      referenceSourceLastWriteTicks: 0
+      processedClipAssetPath: 
+      postProcessedSourceLastWriteTicks: 0
+      postProcessedAtUtc: 
+      postProcessSettings:
+        enableRootSmoothing: 1
+        rootSmoothingWindow: 2
+        rootSmoothingBlend: 0.45
+        enableMotionSmoothing: 1
+        motionSmoothingWindow: 2
+        motionSmoothingBlend: 0.25
+        enableContactLocking: 1
+        contactLockFeet: 1
+        contactLockHands: 0
+        contactVelocityThreshold: 0.04
+        contactHeightThreshold: 0.08
+        contactMinDuration: 0.12
+        ikIterations: 6
+      reviewedContactWindows: []
     - id: 840e0e22dcb64b67bc9cd4c2436cd69c
       displayName: motiongen_20260312_231402_v002
       clipName: motiongen_20260312_231402_v002
@@ -95,6 +811,28 @@ MonoBehaviour:
         time: 0
         position: {x: 0, y: 2.1814048, z: -2.7367387}
         rotation: {x: 0, y: 0, z: 0, w: 1}
+      postProcessingEnabled: 0
+      referenceClipAssetPath: 
+      referenceSourceClipAssetPath: 
+      referenceSourceLastWriteTicks: 0
+      processedClipAssetPath: 
+      postProcessedSourceLastWriteTicks: 0
+      postProcessedAtUtc: 
+      postProcessSettings:
+        enableRootSmoothing: 1
+        rootSmoothingWindow: 2
+        rootSmoothingBlend: 0.45
+        enableMotionSmoothing: 1
+        motionSmoothingWindow: 2
+        motionSmoothingBlend: 0.25
+        enableContactLocking: 1
+        contactLockFeet: 1
+        contactLockHands: 0
+        contactVelocityThreshold: 0.04
+        contactHeightThreshold: 0.08
+        contactMinDuration: 0.12
+        ikIterations: 6
+      reviewedContactWindows: []
     - id: 35a610081b2e47a0be8aaad029b8f805
       displayName: motiongen_20260312_231402_v003
       clipName: motiongen_20260312_231402_v003
@@ -119,6 +857,28 @@ MonoBehaviour:
         time: 2.622
         position: {x: -0.07577586, y: 0, z: -2.5166538}
         rotation: {x: 0, y: 0, z: 0, w: 1}
+      postProcessingEnabled: 0
+      referenceClipAssetPath: 
+      referenceSourceClipAssetPath: 
+      referenceSourceLastWriteTicks: 0
+      processedClipAssetPath: 
+      postProcessedSourceLastWriteTicks: 0
+      postProcessedAtUtc: 
+      postProcessSettings:
+        enableRootSmoothing: 1
+        rootSmoothingWindow: 2
+        rootSmoothingBlend: 0.45
+        enableMotionSmoothing: 1
+        motionSmoothingWindow: 2
+        motionSmoothingBlend: 0.25
+        enableContactLocking: 1
+        contactLockFeet: 1
+        contactLockHands: 0
+        contactVelocityThreshold: 0.04
+        contactHeightThreshold: 0.08
+        contactMinDuration: 0.12
+        ikIterations: 6
+      reviewedContactWindows: []
   - id: 20260312_231307_909_62f5
     generationName: motiongen_20260312_231242
     prompt: walk forward
@@ -161,3 +921,25 @@ MonoBehaviour:
         time: 4.15
         position: {x: 0, y: 0, z: 0}
         rotation: {x: 0, y: 0, z: 0, w: 1}
+      postProcessingEnabled: 0
+      referenceClipAssetPath: 
+      referenceSourceClipAssetPath: 
+      referenceSourceLastWriteTicks: 0
+      processedClipAssetPath: 
+      postProcessedSourceLastWriteTicks: 0
+      postProcessedAtUtc: 
+      postProcessSettings:
+        enableRootSmoothing: 1
+        rootSmoothingWindow: 2
+        rootSmoothingBlend: 0.45
+        enableMotionSmoothing: 1
+        motionSmoothingWindow: 2
+        motionSmoothingBlend: 0.25
+        enableContactLocking: 1
+        contactLockFeet: 1
+        contactLockHands: 0
+        contactVelocityThreshold: 0.04
+        contactHeightThreshold: 0.08
+        contactMinDuration: 0.12
+        ikIterations: 6
+      reviewedContactWindows: []

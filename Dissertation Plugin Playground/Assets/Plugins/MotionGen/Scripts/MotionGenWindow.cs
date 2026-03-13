@@ -36,6 +36,7 @@ public class MotionGenWindow : EditorWindow
         public string prompt;
         public int seed;
         public int requested_fps;
+        public int native_fps;
         public int native_frame_count;
         public int native_joint_count;
         public float duration_seconds_request;
@@ -68,6 +69,7 @@ public class MotionGenWindow : EditorWindow
     private List<Vector3> _generatedPathSamples = new List<Vector3>();
     private readonly HashSet<string> _expandedSessionIds = new HashSet<string>();
     private bool _isCapturingRootPathSamples;
+    private Vector2 _postContactsScroll;
 
     [MenuItem("Window/MotionGen")]
     public static void ShowWindow()
@@ -199,6 +201,7 @@ public class MotionGenWindow : EditorWindow
         _settings.prompt = EditorGUILayout.TextArea(_settings.prompt, GUILayout.MinHeight(60f));
         DrawExportPathRow();
         _settings.generationName = EditorGUILayout.TextField("Generation Name", _settings.generationName);
+        _settings.model = (MotionModel)EditorGUILayout.EnumPopup("Model", _settings.model);
         _settings.fps = Mathf.Max(1, EditorGUILayout.IntField("FPS", _settings.fps));
         _settings.durationSeconds = Mathf.Max(0.1f, EditorGUILayout.FloatField("Duration (s)", _settings.durationSeconds));
         _settings.versionCount = Mathf.Max(1, EditorGUILayout.IntField("Versions", _settings.versionCount));
@@ -283,12 +286,15 @@ public class MotionGenWindow : EditorWindow
             return;
         }
 
-        var clip = LoadClip(item);
+        var clip = LoadPreferredClip(item);
+        var meta = ParseMeta(item.metaJson);
         SyncScenePreviewSelection(item);
         EditorGUILayout.ObjectField("Clip", clip, typeof(AnimationClip), false);
         EditorGUILayout.LabelField("Name", item.displayName);
+        EditorGUILayout.LabelField("Model", meta?.model ?? "Unknown");
         EditorGUILayout.LabelField("Resolved Seed", item.resolvedSeed.ToString());
         EditorGUILayout.LabelField("External BVH", item.externalBvhPath);
+        EditorGUILayout.LabelField("Active Variant", HasFreshProcessedClip(item) ? "Processed" : "Source");
 
         _selectedPreviewTexture = clip != null
             ? AssetPreview.GetAssetPreview(clip) ?? AssetPreview.GetMiniThumbnail(clip)
@@ -326,9 +332,8 @@ public class MotionGenWindow : EditorWindow
             RevealExport(item.externalBvhPath);
         EditorGUILayout.EndHorizontal();
 
-        var meta = ParseMeta(item.metaJson);
         if (meta != null)
-            EditorGUILayout.LabelField("Backend Meta", $"fps={meta.requested_fps}, nativeFrames={meta.native_frame_count}, seedMode={meta.seed_mode}");
+            EditorGUILayout.LabelField("Backend Meta", $"fps={meta.requested_fps}, nativeFps={meta.native_fps}, nativeFrames={meta.native_frame_count}, seedMode={meta.seed_mode}");
 
         EditorGUILayout.EndVertical();
     }
@@ -396,6 +401,9 @@ public class MotionGenWindow : EditorWindow
         if (nextExpanded)
         {
             EditorGUILayout.LabelField("Prompt", session.prompt);
+            var sessionMeta = ParseMeta(session.items.FirstOrDefault()?.metaJson);
+            if (sessionMeta != null && !string.IsNullOrWhiteSpace(sessionMeta.model))
+                EditorGUILayout.LabelField("Model", sessionMeta.model);
             EditorGUILayout.LabelField("Export Path", session.exportDirectory);
             EditorGUILayout.LabelField("Seed Mode", session.usedRandomSeed ? "Random per version" : $"Base {session.baseSeed} + increment");
 
@@ -420,7 +428,7 @@ public class MotionGenWindow : EditorWindow
             _selectedGenerationItemId = item.id;
         }
 
-        var clip = LoadClip(item);
+        var clip = LoadPreferredClip(item);
         using (new EditorGUI.DisabledScope(clip == null || _selectedAnimator == null))
         {
             if (GUILayout.Button("Apply", GUILayout.Width(52f)))
@@ -449,7 +457,8 @@ public class MotionGenWindow : EditorWindow
     private void DrawPathEditTab()
     {
         var selectedItem = GetSelectedHistoryItem();
-        var clip = LoadClip(selectedItem);
+        var clip = LoadSourceClip(selectedItem);
+        SyncScenePreviewAssetPath(selectedItem?.clipAssetPath);
 
         #region agent log
         DebugLog(
@@ -581,7 +590,7 @@ public class MotionGenWindow : EditorWindow
         var nextPosition = EditorGUILayout.Vector3Field("Position", key.position);
         if (EditorGUI.EndChangeCheck())
         {
-            key.time = Mathf.Clamp(nextTime, 0f, GetClipLength(LoadClip(GetSelectedHistoryItem())));
+            key.time = Mathf.Clamp(nextTime, 0f, GetClipLength(LoadSourceClip(GetSelectedHistoryItem())));
             if (_lockPathEditY)
                 nextPosition.y = key.position.y;
 
@@ -596,28 +605,168 @@ public class MotionGenWindow : EditorWindow
 
     private void DrawPostTab()
     {
+        var selectedItem = GetSelectedHistoryItem();
+        var sourceClip = LoadSourceClip(selectedItem);
+        SyncScenePreviewSelection(selectedItem);
+
         EditorGUILayout.LabelField("Post-Processing", EditorStyles.boldLabel);
+        if (selectedItem == null || sourceClip == null)
+        {
+            EditorGUILayout.HelpBox("Select a generated version in the Library tab to review and apply post-processing.", MessageType.Info);
+            return;
+        }
+
+        EnsurePostProcessState(selectedItem);
+        var referenceClip = LoadReferenceClip(selectedItem);
+        var processedClip = LoadProcessedClip(selectedItem);
+        var hasFreshProcessedClip = HasFreshProcessedClip(selectedItem);
 
         EditorGUILayout.BeginVertical("box");
-        EditorGUILayout.LabelField("Root Cleanup", EditorStyles.boldLabel);
-        EditorGUILayout.HelpBox("This tab is reserved for optional clean-up passes that should stay separate from generation and path editing.", MessageType.Info);
+        EditorGUILayout.LabelField("Clip Variants", EditorStyles.boldLabel);
+        EditorGUILayout.ObjectField("Source Clip", sourceClip, typeof(AnimationClip), false);
+        EditorGUILayout.ObjectField("Reference Clip", referenceClip, typeof(AnimationClip), false);
+        EditorGUILayout.ObjectField("Processed Clip", processedClip, typeof(AnimationClip), false);
+        EditorGUILayout.LabelField("Active Preview", hasFreshProcessedClip ? "Processed clip" : "Source clip");
+        if (selectedItem.postProcessingEnabled && !hasFreshProcessedClip)
+            EditorGUILayout.HelpBox("Post-processing is enabled, but the processed clip is missing or out of date. Apply it again to refresh.", MessageType.Warning);
+
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("Inspect Source"))
+            InspectClip(sourceClip);
+        using (new EditorGUI.DisabledScope(referenceClip == null))
+        {
+            if (GUILayout.Button("Inspect Reference"))
+                InspectClip(referenceClip);
+        }
+        using (new EditorGUI.DisabledScope(processedClip == null))
+        {
+            if (GUILayout.Button("Inspect Processed"))
+                InspectClip(processedClip);
+        }
+        EditorGUILayout.EndHorizontal();
+        EditorGUILayout.EndVertical();
+
+        EditorGUILayout.BeginVertical("box");
+        EditorGUI.BeginChangeCheck();
+        selectedItem.postProcessingEnabled = EditorGUILayout.ToggleLeft("Enable Post-Processing", selectedItem.postProcessingEnabled);
+        if (EditorGUI.EndChangeCheck())
+            PersistPostProcessState(selectedItem);
+
+        DrawPostProcessSettings(selectedItem);
+        EditorGUILayout.EndVertical();
+
+        EditorGUILayout.BeginVertical("box");
+        EditorGUILayout.LabelField("Contact Review", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox(
+            "Auto-detect candidate support windows, review them here, then apply. You can enable feet, hands, or both for clips such as handstands.",
+            MessageType.Info);
+
         using (new EditorGUI.DisabledScope(true))
         {
-            EditorGUILayout.ToggleLeft("Enable root stabilization", false);
-            EditorGUILayout.ToggleLeft("Enable drift cleanup", false);
+            if (GUILayout.Button("Auto Detect / Refresh Contacts"))
+                DetectPostProcessContacts(selectedItem, sourceClip);
+        }
+
+        EditorGUILayout.HelpBox("Contact review is temporarily disabled while contact locking is being reworked.", MessageType.None);
+
+        if (_selectedAnimator == null)
+            EditorGUILayout.HelpBox("Select a humanoid animator in the scene to detect contacts and apply post-processing.", MessageType.Warning);
+
+        if (selectedItem.reviewedContactWindows == null || selectedItem.reviewedContactWindows.Count == 0)
+        {
+            EditorGUILayout.HelpBox("No reviewed contact windows yet.", MessageType.None);
+        }
+        else
+        {
+            _postContactsScroll = EditorGUILayout.BeginScrollView(_postContactsScroll, GUILayout.MinHeight(160f), GUILayout.MaxHeight(260f));
+            for (var index = 0; index < selectedItem.reviewedContactWindows.Count; index++)
+                DrawContactWindowRow(selectedItem, selectedItem.reviewedContactWindows[index], index);
+            EditorGUILayout.EndScrollView();
+        }
+
+        using (new EditorGUI.DisabledScope(true))
+        {
+            if (GUILayout.Button("Clear Contacts"))
+            {
+                selectedItem.reviewedContactWindows.Clear();
+                PersistPostProcessState(selectedItem);
+            }
         }
         EditorGUILayout.EndVertical();
 
         EditorGUILayout.BeginVertical("box");
-        EditorGUILayout.LabelField("Future Contact Locking", EditorStyles.boldLabel);
-        EditorGUILayout.HelpBox(
-            "Planned future feature: optional user-controlled contact locking for support limbs. This should support both feet and hands, auto-detect contacts, and allow users to choose eligible limbs.",
-            MessageType.None);
+        DrawScenePreviewControls(hasFreshProcessedClip ? processedClip : sourceClip);
+
+        using (new EditorGUI.DisabledScope(!selectedItem.postProcessingEnabled || _selectedAnimator == null))
+        {
+            if (GUILayout.Button("Apply Post-Processing"))
+                ApplyPostProcessingToItem(selectedItem, sourceClip);
+        }
+        EditorGUILayout.EndVertical();
+    }
+
+    private void DrawPostProcessSettings(MotionGenGenerationItem item)
+    {
+        var settings = item.postProcessSettings ?? new MotionGenPostProcessSettings();
+        settings.EnsureDefaults();
+        item.postProcessSettings = settings;
+
+        EditorGUILayout.LabelField("Passes", EditorStyles.boldLabel);
+
+        EditorGUI.BeginChangeCheck();
+        settings.enableRootSmoothing = EditorGUILayout.ToggleLeft("Root Smoothing", settings.enableRootSmoothing);
+        using (new EditorGUI.DisabledScope(!settings.enableRootSmoothing))
+        {
+            settings.rootSmoothingWindow = EditorGUILayout.IntSlider("Root Window", settings.rootSmoothingWindow, 1, 8);
+            settings.rootSmoothingBlend = EditorGUILayout.Slider("Root Blend", settings.rootSmoothingBlend, 0f, 1f);
+        }
+
+        settings.enableMotionSmoothing = EditorGUILayout.ToggleLeft("Motion Smoothing", settings.enableMotionSmoothing);
+        using (new EditorGUI.DisabledScope(!settings.enableMotionSmoothing))
+        {
+            settings.motionSmoothingWindow = EditorGUILayout.IntSlider("Motion Window", settings.motionSmoothingWindow, 1, 8);
+            settings.motionSmoothingBlend = EditorGUILayout.Slider("Motion Blend", settings.motionSmoothingBlend, 0f, 1f);
+        }
+
+        settings.enableContactLocking = false;
         using (new EditorGUI.DisabledScope(true))
         {
-            EditorGUILayout.ToggleLeft("Enable contact locking", false);
-            EditorGUILayout.ToggleLeft("Feet eligible", true);
-            EditorGUILayout.ToggleLeft("Hands eligible", true);
+            EditorGUILayout.ToggleLeft("Contact Locking (Work In Progress)", false);
+            EditorGUILayout.ToggleLeft("Feet Eligible", settings.contactLockFeet);
+            EditorGUILayout.ToggleLeft("Hands Eligible", settings.contactLockHands);
+            settings.contactVelocityThreshold = EditorGUILayout.Slider("Velocity Threshold", settings.contactVelocityThreshold, 0.005f, 0.15f);
+            settings.contactHeightThreshold = EditorGUILayout.Slider("Height Threshold", settings.contactHeightThreshold, 0.01f, 0.3f);
+            settings.contactMinDuration = EditorGUILayout.Slider("Min Contact Duration", settings.contactMinDuration, 0.04f, 0.6f);
+            settings.ikIterations = EditorGUILayout.IntSlider("IK Iterations", settings.ikIterations, 1, 12);
+        }
+        EditorGUILayout.HelpBox("Contact locking is temporarily disabled until the support-driven trajectory workflow is stable.", MessageType.None);
+
+        if (EditorGUI.EndChangeCheck())
+        {
+            settings.EnsureDefaults();
+            PersistPostProcessState(item);
+        }
+    }
+
+    private void DrawContactWindowRow(MotionGenGenerationItem item, MotionGenContactWindow window, int index)
+    {
+        if (window == null)
+            return;
+
+        EditorGUILayout.BeginVertical("box");
+        EditorGUI.BeginChangeCheck();
+        window.enabled = EditorGUILayout.ToggleLeft($"{window.limb} ({window.startTime:0.00}s - {window.endTime:0.00}s)", window.enabled);
+        window.limb = (MotionGenContactLimb)EditorGUILayout.EnumPopup("Limb", window.limb);
+        window.startTime = Mathf.Max(0f, EditorGUILayout.FloatField("Start", window.startTime));
+        window.endTime = Mathf.Max(window.startTime, EditorGUILayout.FloatField("End", window.endTime));
+        window.anchorPosition = EditorGUILayout.Vector3Field("Anchor", window.anchorPosition);
+        if (EditorGUI.EndChangeCheck())
+            PersistPostProcessState(item);
+
+        if (GUILayout.Button($"Remove Contact {index + 1}"))
+        {
+            item.reviewedContactWindows.RemoveAt(index);
+            PersistPostProcessState(item);
         }
         EditorGUILayout.EndVertical();
     }
@@ -660,7 +809,8 @@ public class MotionGenWindow : EditorWindow
                 _settings.durationSeconds,
                 _settings.versionCount,
                 useRandomSeed,
-                baseSeed);
+                baseSeed,
+                _settings.model);
 
             if (reply == null || reply.Items == null || reply.Items.Count == 0)
                 throw new InvalidOperationException("Backend returned no generated motions.");
@@ -669,13 +819,13 @@ public class MotionGenWindow : EditorWindow
             _history.AddSession(session);
             ExpandAndSelectLatest(session);
 
-            var autoApplyClip = LoadClip(session.items.FirstOrDefault());
+            var autoApplyClip = LoadPreferredClip(session.items.FirstOrDefault());
             if (_settings.autoApplyOnGenerate && _selectedAnimator != null && autoApplyClip != null)
                 ApplyGeneratedClip(autoApplyClip);
 
             _activeTab = MotionGenTab.Library;
-            _status = $"Generated {session.items.Count} motion versions.";
-            Debug.Log($"[MotionGen] Batch generate OK | count={session.items.Count}");
+            _status = $"Generated {session.items.Count} {_settings.model} motion version(s).";
+            Debug.Log($"[MotionGen] Batch generate OK | model={_settings.model} | count={session.items.Count}");
         }
         catch (RpcException ex)
         {
@@ -817,7 +967,7 @@ public class MotionGenWindow : EditorWindow
             return;
 
         var item = GetSelectedHistoryItem();
-        var clip = LoadClip(item);
+        var clip = _activeTab == MotionGenTab.PathEdit ? LoadSourceClip(item) : LoadPreferredClip(item);
         if (_selectedAnimator == null || clip == null)
         {
             if (_isScenePreviewPlaying)
@@ -862,7 +1012,7 @@ public class MotionGenWindow : EditorWindow
             return;
 
         var item = GetSelectedHistoryItem();
-        var clip = LoadClip(item);
+        var clip = LoadSourceClip(item);
         if (_selectedAnimator == null || clip == null)
             return;
 
@@ -1014,6 +1164,102 @@ public class MotionGenWindow : EditorWindow
         _history.Save();
     }
 
+    private void EnsurePostProcessState(MotionGenGenerationItem item)
+    {
+        if (item == null)
+            return;
+
+        item.postProcessSettings ??= new MotionGenPostProcessSettings();
+        item.postProcessSettings.EnsureDefaults();
+        item.reviewedContactWindows ??= new List<MotionGenContactWindow>();
+    }
+
+    private void PersistPostProcessState(MotionGenGenerationItem item)
+    {
+        if (item == null || _history == null)
+            return;
+
+        EnsurePostProcessState(item);
+        item.postProcessSettings.EnsureDefaults();
+        item.reviewedContactWindows = item.reviewedContactWindows
+            .Where(window => window != null)
+            .OrderBy(window => window.startTime)
+            .ThenBy(window => window.limb)
+            .ToList();
+        _history.Save();
+    }
+
+    private void DetectPostProcessContacts(MotionGenGenerationItem item, AnimationClip sourceClip)
+    {
+        if (item == null || sourceClip == null || _selectedAnimator == null)
+            return;
+
+        EnsurePostProcessState(item);
+        if (!MotionGenPostProcessor.TryDetectContactWindows(
+                sourceClip,
+                _selectedAnimator,
+                item.postProcessSettings,
+                out var contactWindows,
+                out var error))
+        {
+            _status = error ?? "Contact detection failed.";
+            return;
+        }
+
+        item.reviewedContactWindows = contactWindows;
+        PersistPostProcessState(item);
+        _status = contactWindows.Count > 0
+            ? $"Detected {contactWindows.Count} contact windows."
+            : "Auto-detect found no contact windows. Try increasing the velocity/height thresholds or disable contact locking for this clip.";
+    }
+
+    private void ApplyPostProcessingToItem(MotionGenGenerationItem item, AnimationClip sourceClip)
+    {
+        if (item == null || sourceClip == null || _selectedAnimator == null)
+            return;
+
+        EnsurePostProcessState(item);
+        item.postProcessSettings.enableContactLocking = false;
+        if (!MotionGenPostProcessor.TryApplyPostProcessing(
+                sourceClip,
+                item.clipAssetPath,
+                _selectedAnimator,
+                item.postProcessSettings,
+                item.reviewedContactWindows,
+                item.referenceClipAssetPath,
+                item.processedClipAssetPath,
+                out var result,
+                out var error))
+        {
+            _status = error ?? "Post-processing failed.";
+            return;
+        }
+
+        item.referenceClipAssetPath = result.referenceClipAssetPath;
+        item.referenceSourceClipAssetPath = result.sourceClipAssetPath;
+        item.referenceSourceLastWriteTicks = result.sourceLastWriteTicks;
+        item.processedClipAssetPath = result.processedClipAssetPath;
+        item.postProcessedSourceLastWriteTicks = result.sourceLastWriteTicks;
+        item.postProcessedAtUtc = DateTime.UtcNow.ToString("O");
+        item.postProcessSettings = result.settings ?? item.postProcessSettings;
+        item.reviewedContactWindows = result.contactWindows ?? item.reviewedContactWindows;
+        PersistPostProcessState(item);
+
+        var processedClip = LoadProcessedClip(item);
+        if (processedClip != null)
+        {
+            ApplyGeneratedClip(processedClip);
+            _status = $"Applied processed clip {processedClip.name}.";
+        }
+        else
+        {
+            _status = "Post-processing completed, but the processed clip could not be loaded.";
+        }
+
+        RequestPreviewRefresh();
+        Repaint();
+    }
+
     private Vector3 EvaluateCorrectedRootPosition(AnimationClip clip, float time, bool fallBackToOriginal)
     {
         if (_pathEditKeys == null || _pathEditKeys.Count == 0)
@@ -1072,7 +1318,7 @@ public class MotionGenWindow : EditorWindow
         _expandedSessionIds.Add(session.id);
     }
 
-    private static AnimationClip LoadClip(MotionGenGenerationItem item)
+    private static AnimationClip LoadSourceClip(MotionGenGenerationItem item)
     {
         if (item == null || string.IsNullOrWhiteSpace(item.clipAssetPath))
             return null;
@@ -1080,9 +1326,56 @@ public class MotionGenWindow : EditorWindow
         return AssetDatabase.LoadAssetAtPath<AnimationClip>(item.clipAssetPath);
     }
 
+    private static AnimationClip LoadReferenceClip(MotionGenGenerationItem item)
+    {
+        if (item == null || string.IsNullOrWhiteSpace(item.referenceClipAssetPath))
+            return null;
+
+        return AssetDatabase.LoadAssetAtPath<AnimationClip>(item.referenceClipAssetPath);
+    }
+
+    private static AnimationClip LoadProcessedClip(MotionGenGenerationItem item)
+    {
+        if (item == null || string.IsNullOrWhiteSpace(item.processedClipAssetPath))
+            return null;
+
+        return AssetDatabase.LoadAssetAtPath<AnimationClip>(item.processedClipAssetPath);
+    }
+
+    private static AnimationClip LoadPreferredClip(MotionGenGenerationItem item)
+    {
+        return HasFreshProcessedClip(item) ? LoadProcessedClip(item) : LoadSourceClip(item);
+    }
+
+    private static bool HasFreshProcessedClip(MotionGenGenerationItem item)
+    {
+        if (item == null || !item.postProcessingEnabled || string.IsNullOrWhiteSpace(item.processedClipAssetPath))
+            return false;
+
+        if (LoadProcessedClip(item) == null)
+            return false;
+
+        return item.postProcessedSourceLastWriteTicks != 0L
+            && item.postProcessedSourceLastWriteTicks == GetClipAssetLastWriteTicks(item.clipAssetPath);
+    }
+
+    private static long GetClipAssetLastWriteTicks(string clipAssetPath)
+    {
+        if (string.IsNullOrWhiteSpace(clipAssetPath))
+            return 0L;
+
+        var fullPath = Path.GetFullPath(clipAssetPath);
+        return File.Exists(fullPath) ? File.GetLastWriteTimeUtc(fullPath).Ticks : 0L;
+    }
+
     private void SyncScenePreviewSelection(MotionGenGenerationItem item)
     {
-        var clipAssetPath = item?.clipAssetPath;
+        var clipAssetPath = HasFreshProcessedClip(item) ? item?.processedClipAssetPath : item?.clipAssetPath;
+        SyncScenePreviewAssetPath(clipAssetPath);
+    }
+
+    private void SyncScenePreviewAssetPath(string clipAssetPath)
+    {
         if (string.Equals(_scenePreviewClipAssetPath, clipAssetPath, StringComparison.Ordinal))
             return;
 
@@ -1109,7 +1402,7 @@ public class MotionGenWindow : EditorWindow
         _pathEditClipAssetPath = item.clipAssetPath;
         _selectedPathKeyIndex = -1;
 
-        var clip = LoadClip(item);
+        var clip = LoadSourceClip(item);
         if (clip == null)
         {
             _generatedPathSamples.Clear();

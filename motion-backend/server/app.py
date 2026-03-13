@@ -9,11 +9,15 @@ from dotenv import load_dotenv
 
 import motion_pb2
 import motion_pb2_grpc
+from momask_bvh import MoMaskBvhGenerator
 from t2mgpt_exact_bvh import T2MGPTExactBvhGenerator
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
-_GENERATOR = T2MGPTExactBvhGenerator()
+_GENERATORS = {
+    motion_pb2.T2M_GPT: T2MGPTExactBvhGenerator(),
+    motion_pb2.MOMASK: MoMaskBvhGenerator(),
+}
 
 
 class MotionService(motion_pb2_grpc.MotionServiceServicer):
@@ -27,9 +31,10 @@ class MotionService(motion_pb2_grpc.MotionServiceServicer):
         )
 
     def Generate(self, request, context):
-        if request.model != motion_pb2.T2M_GPT:
+        generator = _resolve_generator(request.model)
+        if generator is None:
             context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details("Only T2M_GPT is supported by the active MotionGen pipeline.")
+            context.set_details(f"Unsupported motion model: {_model_name(request.model)}.")
             return motion_pb2.GenerateReply()
 
         if request.format not in (motion_pb2.BVH, 0):
@@ -38,7 +43,7 @@ class MotionService(motion_pb2_grpc.MotionServiceServicer):
             return motion_pb2.GenerateReply()
 
         try:
-            data, filename, meta = _GENERATOR.generate_bvh(
+            data, filename, meta = generator.generate_bvh(
                 prompt=request.prompt,
                 fps=request.fps or 20,
                 duration_seconds=request.duration_seconds or 2.0,
@@ -60,9 +65,10 @@ class MotionService(motion_pb2_grpc.MotionServiceServicer):
             return motion_pb2.GenerateReply()
 
     def GenerateBatch(self, request, context):
-        if request.model != motion_pb2.T2M_GPT:
+        generator = _resolve_generator(request.model)
+        if generator is None:
             context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
-            context.set_details("Only T2M_GPT is supported by the active MotionGen pipeline.")
+            context.set_details(f"Unsupported motion model: {_model_name(request.model)}.")
             return motion_pb2.BatchGenerateReply()
 
         if request.format not in (motion_pb2.BVH, 0):
@@ -79,7 +85,7 @@ class MotionService(motion_pb2_grpc.MotionServiceServicer):
         try:
             for index in range(count):
                 resolved_seed = rng.randint(0, 2_147_483_647) if use_random_seed else base_seed + index
-                data, filename, meta = _GENERATOR.generate_bvh(
+                data, filename, meta = generator.generate_bvh(
                     prompt=request.prompt,
                     fps=request.fps or 20,
                     duration_seconds=request.duration_seconds or 2.0,
@@ -129,6 +135,23 @@ def _try_parse_meta(meta: str) -> dict:
         return {"raw_meta": meta}
 
     return parsed if isinstance(parsed, dict) else {"raw_meta": meta}
+
+
+def _resolve_generator(model: int):
+    if model in _GENERATORS:
+        return _GENERATORS[model]
+
+    if model == 0:
+        return _GENERATORS[motion_pb2.T2M_GPT]
+
+    return None
+
+
+def _model_name(model: int) -> str:
+    try:
+        return motion_pb2.MotionModel.Name(model)
+    except ValueError:
+        return str(model)
 
 
 def serve(port: int = 50051):

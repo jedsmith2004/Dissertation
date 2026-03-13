@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using System.IO;
+using Motion;
 using UnityEditor;
 using UnityEngine;
 
@@ -26,6 +27,7 @@ public class MotionGenSettingsWindow : EditorWindow
 
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Generation Defaults", EditorStyles.boldLabel);
+        _settings.model = (MotionModel)EditorGUILayout.EnumPopup("Default Model", _settings.model);
         _settings.defaultExportDirectory = EditorGUILayout.TextField("Default Export Path", _settings.defaultExportDirectory);
         _settings.defaultMirrorRootAssetPath = EditorGUILayout.TextField("Mirror Asset Root", _settings.defaultMirrorRootAssetPath);
         _settings.defaultGenerationNamePrefix = EditorGUILayout.TextField("Default Name Prefix", _settings.defaultGenerationNamePrefix);
@@ -52,6 +54,7 @@ public class MotionGenEditorSettings : ScriptableObject
     public string seedText = "";
     public string generationName = "";
     public int versionCount = 1;
+    public MotionModel model = MotionModel.T2MGpt;
     public string serverHost = "127.0.0.1";
     public int serverPort = 50051;
     public bool autoApplyOnGenerate = true;

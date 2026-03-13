@@ -29,6 +29,15 @@ public class MotionGenGenerationItem
     public int resolvedSeed;
     public bool pathEditLockY = true;
     public List<MotionGenPathEditKey> pathEditKeys = new List<MotionGenPathEditKey>();
+    public bool postProcessingEnabled;
+    public string referenceClipAssetPath;
+    public string referenceSourceClipAssetPath;
+    public long referenceSourceLastWriteTicks;
+    public string processedClipAssetPath;
+    public long postProcessedSourceLastWriteTicks;
+    public string postProcessedAtUtc;
+    public MotionGenPostProcessSettings postProcessSettings = new MotionGenPostProcessSettings();
+    public List<MotionGenContactWindow> reviewedContactWindows = new List<MotionGenContactWindow>();
 }
 
 [Serializable]

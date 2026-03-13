@@ -14,7 +14,7 @@ public class MotionClient : IDisposable
         _client = new MotionService.MotionServiceClient(_channel);
     }
 
-    public async Task<GenerateReply> GenerateAsync(string prompt, int fps, float durationSeconds, int seed)
+    public async Task<GenerateReply> GenerateAsync(string prompt, int fps, float durationSeconds, int seed, MotionModel model)
     {
         var req = new GenerateRequest
         {
@@ -23,13 +23,13 @@ public class MotionClient : IDisposable
             DurationSeconds = durationSeconds,
             Seed = seed,
             Format = MotionFormat.Bvh,
-            Model = MotionModel.T2MGpt
+            Model = model
         };
 
         return await _client.GenerateAsync(req);
     }
 
-    public async Task<BatchGenerateReply> GenerateBatchAsync(string prompt, int fps, float durationSeconds, int count, bool useRandomSeed, int seed)
+    public async Task<BatchGenerateReply> GenerateBatchAsync(string prompt, int fps, float durationSeconds, int count, bool useRandomSeed, int seed, MotionModel model)
     {
         var req = new BatchGenerateRequest
         {
@@ -40,7 +40,7 @@ public class MotionClient : IDisposable
             UseRandomSeed = useRandomSeed,
             Seed = seed,
             Format = MotionFormat.Bvh,
-            Model = MotionModel.T2MGpt
+            Model = model
         };
 
         return await _client.GenerateBatchAsync(req);
