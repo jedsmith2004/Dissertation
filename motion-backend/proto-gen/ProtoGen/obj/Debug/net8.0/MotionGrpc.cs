@@ -55,6 +55,10 @@ namespace Motion {
     static readonly grpc::Marshaller<global::Motion.GenerateRequest> __Marshaller_motion_GenerateRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Motion.GenerateRequest.Parser));
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Marshaller<global::Motion.GenerateReply> __Marshaller_motion_GenerateReply = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Motion.GenerateReply.Parser));
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    static readonly grpc::Marshaller<global::Motion.BatchGenerateRequest> __Marshaller_motion_BatchGenerateRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Motion.BatchGenerateRequest.Parser));
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    static readonly grpc::Marshaller<global::Motion.BatchGenerateReply> __Marshaller_motion_BatchGenerateReply = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Motion.BatchGenerateReply.Parser));
 
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Method<global::Motion.Empty, global::Motion.PingResponse> __Method_Ping = new grpc::Method<global::Motion.Empty, global::Motion.PingResponse>(
@@ -79,6 +83,14 @@ namespace Motion {
         "Generate",
         __Marshaller_motion_GenerateRequest,
         __Marshaller_motion_GenerateReply);
+
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    static readonly grpc::Method<global::Motion.BatchGenerateRequest, global::Motion.BatchGenerateReply> __Method_GenerateBatch = new grpc::Method<global::Motion.BatchGenerateRequest, global::Motion.BatchGenerateReply>(
+        grpc::MethodType.Unary,
+        __ServiceName,
+        "GenerateBatch",
+        __Marshaller_motion_BatchGenerateRequest,
+        __Marshaller_motion_BatchGenerateReply);
 
     /// <summary>Service descriptor</summary>
     public static global::Google.Protobuf.Reflection.ServiceDescriptor Descriptor
@@ -256,6 +268,26 @@ namespace Motion {
       public virtual grpc::AsyncUnaryCall<global::Motion.GenerateReply> GenerateAsync(global::Motion.GenerateRequest request, grpc::CallOptions options)
       {
         return CallInvoker.AsyncUnaryCall(__Method_Generate, null, options, request);
+      }
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual global::Motion.BatchGenerateReply GenerateBatch(global::Motion.BatchGenerateRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return GenerateBatch(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual global::Motion.BatchGenerateReply GenerateBatch(global::Motion.BatchGenerateRequest request, grpc::CallOptions options)
+      {
+        return CallInvoker.BlockingUnaryCall(__Method_GenerateBatch, null, options, request);
+      }
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual grpc::AsyncUnaryCall<global::Motion.BatchGenerateReply> GenerateBatchAsync(global::Motion.BatchGenerateRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return GenerateBatchAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual grpc::AsyncUnaryCall<global::Motion.BatchGenerateReply> GenerateBatchAsync(global::Motion.BatchGenerateRequest request, grpc::CallOptions options)
+      {
+        return CallInvoker.AsyncUnaryCall(__Method_GenerateBatch, null, options, request);
       }
       /// <summary>Creates a new instance of client from given <c>ClientBaseConfiguration</c>.</summary>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]

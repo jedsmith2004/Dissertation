@@ -13,6 +13,7 @@ service MotionService {
 
   // TODO: Later, generate and serve actual BVH
   rpc Generate (GenerateRequest) returns (GenerateReply);
+  rpc GenerateBatch (BatchGenerateRequest) returns (BatchGenerateReply);
 }
 
 message Empty {}
@@ -47,6 +48,21 @@ message GenerateReply {
   bytes data = 2;
   string meta = 3;
   string filename = 4;
+}
+
+message BatchGenerateRequest {
+  string prompt = 1;
+  int32 fps = 2;
+  float duration_seconds = 3;
+  int32 count = 4;
+  bool use_random_seed = 5;
+  int32 seed = 6;
+  MotionFormat format = 7;
+  MotionModel model = 8;
+}
+
+message BatchGenerateReply {
+  repeated GenerateReply items = 1;
 }
 
 message MotionReply {

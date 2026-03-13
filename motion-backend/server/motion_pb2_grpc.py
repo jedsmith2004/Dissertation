@@ -49,6 +49,11 @@ class MotionServiceStub(object):
                 request_serializer=motion__pb2.GenerateRequest.SerializeToString,
                 response_deserializer=motion__pb2.GenerateReply.FromString,
                 _registered_method=True)
+        self.GenerateBatch = channel.unary_unary(
+                '/motion.MotionService/GenerateBatch',
+                request_serializer=motion__pb2.BatchGenerateRequest.SerializeToString,
+                response_deserializer=motion__pb2.BatchGenerateReply.FromString,
+                _registered_method=True)
 
 
 class MotionServiceServicer(object):
@@ -75,6 +80,11 @@ class MotionServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GenerateBatch(self, request, context):
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_MotionServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -92,6 +102,11 @@ def add_MotionServiceServicer_to_server(servicer, server):
                     servicer.Generate,
                     request_deserializer=motion__pb2.GenerateRequest.FromString,
                     response_serializer=motion__pb2.GenerateReply.SerializeToString,
+            ),
+            'GenerateBatch': grpc.unary_unary_rpc_method_handler(
+                    servicer.GenerateBatch,
+                    request_deserializer=motion__pb2.BatchGenerateRequest.FromString,
+                    response_serializer=motion__pb2.BatchGenerateReply.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -175,6 +190,33 @@ class MotionService(object):
             '/motion.MotionService/Generate',
             motion__pb2.GenerateRequest.SerializeToString,
             motion__pb2.GenerateReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GenerateBatch(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/motion.MotionService/GenerateBatch',
+            motion__pb2.BatchGenerateRequest.SerializeToString,
+            motion__pb2.BatchGenerateReply.FromString,
             options,
             channel_credentials,
             insecure,

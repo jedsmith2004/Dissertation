@@ -12,10 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 0}
   m_Name: MotionGenEditorSettings
   m_EditorClassIdentifier: Assembly-CSharp-firstpass::MotionGenEditorSettings
-  prompt: A person walks forward.
+  prompt: walk forward
   fps: 20
   durationSeconds: 2
-  seed: 0
+  seedText: 
+  generationName: 
+  versionCount: 1
   serverHost: 127.0.0.1
   serverPort: 50051
   autoApplyOnGenerate: 1
+  defaultExportDirectory: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+    Plugin Playground\MotionGenExports
+  defaultMirrorRootAssetPath: Assets/MotionGen/Generated/Mirrored
+  defaultGenerationNamePrefix: motiongen

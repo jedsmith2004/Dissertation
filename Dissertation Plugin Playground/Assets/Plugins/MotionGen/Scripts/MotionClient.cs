@@ -29,6 +29,23 @@ public class MotionClient : IDisposable
         return await _client.GenerateAsync(req);
     }
 
+    public async Task<BatchGenerateReply> GenerateBatchAsync(string prompt, int fps, float durationSeconds, int count, bool useRandomSeed, int seed)
+    {
+        var req = new BatchGenerateRequest
+        {
+            Prompt = prompt,
+            Fps = fps,
+            DurationSeconds = durationSeconds,
+            Count = count,
+            UseRandomSeed = useRandomSeed,
+            Seed = seed,
+            Format = MotionFormat.Bvh,
+            Model = MotionModel.T2MGpt
+        };
+
+        return await _client.GenerateBatchAsync(req);
+    }
+
     public void Dispose()
     {
         _channel?.ShutdownAsync().Wait();

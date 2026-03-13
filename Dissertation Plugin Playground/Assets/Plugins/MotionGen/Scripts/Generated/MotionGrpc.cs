@@ -55,6 +55,10 @@ namespace Motion {
     static readonly grpc::Marshaller<global::Motion.GenerateRequest> __Marshaller_motion_GenerateRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Motion.GenerateRequest.Parser));
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Marshaller<global::Motion.GenerateReply> __Marshaller_motion_GenerateReply = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Motion.GenerateReply.Parser));
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    static readonly grpc::Marshaller<global::Motion.BatchGenerateRequest> __Marshaller_motion_BatchGenerateRequest = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Motion.BatchGenerateRequest.Parser));
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    static readonly grpc::Marshaller<global::Motion.BatchGenerateReply> __Marshaller_motion_BatchGenerateReply = grpc::Marshallers.Create(__Helper_SerializeMessage, context => __Helper_DeserializeMessage(context, global::Motion.BatchGenerateReply.Parser));
 
     [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
     static readonly grpc::Method<global::Motion.Empty, global::Motion.PingResponse> __Method_Ping = new grpc::Method<global::Motion.Empty, global::Motion.PingResponse>(
@@ -80,52 +84,18 @@ namespace Motion {
         __Marshaller_motion_GenerateRequest,
         __Marshaller_motion_GenerateReply);
 
+    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+    static readonly grpc::Method<global::Motion.BatchGenerateRequest, global::Motion.BatchGenerateReply> __Method_GenerateBatch = new grpc::Method<global::Motion.BatchGenerateRequest, global::Motion.BatchGenerateReply>(
+        grpc::MethodType.Unary,
+        __ServiceName,
+        "GenerateBatch",
+        __Marshaller_motion_BatchGenerateRequest,
+        __Marshaller_motion_BatchGenerateReply);
+
     /// <summary>Service descriptor</summary>
     public static global::Google.Protobuf.Reflection.ServiceDescriptor Descriptor
     {
       get { return global::Motion.MotionReflection.Descriptor.Services[0]; }
-    }
-
-    /// <summary>Base class for server-side implementations of MotionService</summary>
-    [grpc::BindServiceMethod(typeof(MotionService), "BindService")]
-    public abstract partial class MotionServiceBase
-    {
-      /// <summary>
-      /// Sanity check
-      /// </summary>
-      /// <param name="request">The request received from the client.</param>
-      /// <param name="context">The context of the server-side call handler being invoked.</param>
-      /// <returns>The response to send back to the client (wrapped by a task).</returns>
-      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual global::System.Threading.Tasks.Task<global::Motion.PingResponse> Ping(global::Motion.Empty request, grpc::ServerCallContext context)
-      {
-        throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
-      }
-
-      /// <summary>
-      /// TESTING: Prove round trip
-      /// </summary>
-      /// <param name="request">The request received from the client.</param>
-      /// <param name="context">The context of the server-side call handler being invoked.</param>
-      /// <returns>The response to send back to the client (wrapped by a task).</returns>
-      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual global::System.Threading.Tasks.Task<global::Motion.MotionReply> GetDummyBVH(global::Motion.Empty request, grpc::ServerCallContext context)
-      {
-        throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
-      }
-
-      /// <summary>
-      /// TODO: Later, generate and serve actual BVH
-      /// </summary>
-      /// <param name="request">The request received from the client.</param>
-      /// <param name="context">The context of the server-side call handler being invoked.</param>
-      /// <returns>The response to send back to the client (wrapped by a task).</returns>
-      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-      public virtual global::System.Threading.Tasks.Task<global::Motion.GenerateReply> Generate(global::Motion.GenerateRequest request, grpc::ServerCallContext context)
-      {
-        throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
-      }
-
     }
 
     /// <summary>Client for MotionService</summary>
@@ -299,35 +269,32 @@ namespace Motion {
       {
         return CallInvoker.AsyncUnaryCall(__Method_Generate, null, options, request);
       }
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual global::Motion.BatchGenerateReply GenerateBatch(global::Motion.BatchGenerateRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return GenerateBatch(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual global::Motion.BatchGenerateReply GenerateBatch(global::Motion.BatchGenerateRequest request, grpc::CallOptions options)
+      {
+        return CallInvoker.BlockingUnaryCall(__Method_GenerateBatch, null, options, request);
+      }
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual grpc::AsyncUnaryCall<global::Motion.BatchGenerateReply> GenerateBatchAsync(global::Motion.BatchGenerateRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
+      {
+        return GenerateBatchAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
+      }
+      [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
+      public virtual grpc::AsyncUnaryCall<global::Motion.BatchGenerateReply> GenerateBatchAsync(global::Motion.BatchGenerateRequest request, grpc::CallOptions options)
+      {
+        return CallInvoker.AsyncUnaryCall(__Method_GenerateBatch, null, options, request);
+      }
       /// <summary>Creates a new instance of client from given <c>ClientBaseConfiguration</c>.</summary>
       [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
       protected override MotionServiceClient NewInstance(ClientBaseConfiguration configuration)
       {
         return new MotionServiceClient(configuration);
       }
-    }
-
-    /// <summary>Creates service definition that can be registered with a server</summary>
-    /// <param name="serviceImpl">An object implementing the server-side handling logic.</param>
-    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-    public static grpc::ServerServiceDefinition BindService(MotionServiceBase serviceImpl)
-    {
-      return grpc::ServerServiceDefinition.CreateBuilder()
-          .AddMethod(__Method_Ping, serviceImpl.Ping)
-          .AddMethod(__Method_GetDummyBVH, serviceImpl.GetDummyBVH)
-          .AddMethod(__Method_Generate, serviceImpl.Generate).Build();
-    }
-
-    /// <summary>Register service method with a service binder with or without implementation. Useful when customizing the service binding logic.
-    /// Note: this method is part of an experimental API that can change or be removed without any prior notice.</summary>
-    /// <param name="serviceBinder">Service methods will be bound by calling <c>AddMethod</c> on this object.</param>
-    /// <param name="serviceImpl">An object implementing the server-side handling logic.</param>
-    [global::System.CodeDom.Compiler.GeneratedCode("grpc_csharp_plugin", null)]
-    public static void BindService(grpc::ServiceBinderBase serviceBinder, MotionServiceBase serviceImpl)
-    {
-      serviceBinder.AddMethod(__Method_Ping, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::Motion.Empty, global::Motion.PingResponse>(serviceImpl.Ping));
-      serviceBinder.AddMethod(__Method_GetDummyBVH, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::Motion.Empty, global::Motion.MotionReply>(serviceImpl.GetDummyBVH));
-      serviceBinder.AddMethod(__Method_Generate, serviceImpl == null ? null : new grpc::UnaryServerMethod<global::Motion.GenerateRequest, global::Motion.GenerateReply>(serviceImpl.Generate));
     }
 
   }

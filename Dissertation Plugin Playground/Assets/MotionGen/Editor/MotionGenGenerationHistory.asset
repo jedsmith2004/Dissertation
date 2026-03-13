@@ -1,0 +1,163 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4dc91053e5188744e8a98a87a99a4a5e, type: 3}
+  m_Name: MotionGenGenerationHistory
+  m_EditorClassIdentifier: 
+  sessions:
+  - id: 20260313_001155_392_3de7
+    generationName: motiongen_20260313_001149
+    prompt: A person does a forward roll.
+    exportDirectory: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+      Plugin Playground\MotionGenExports
+    mirrorDirectoryAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_001149_20260313_001155_392_3de7
+    createdAtUtc: 2026-03-13T00:11:55.4632255Z
+    versionCount: 1
+    usedRandomSeed: 1
+    baseSeed: 0
+    items:
+    - id: 4bcfbe01761848c1b4a2bad63146e5af
+      displayName: motiongen_20260313_001149_v001
+      clipName: motiongen_20260313_001149_v001
+      externalBvhPath: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+        Plugin Playground\MotionGenExports\motiongen_20260313_001149_v001.bvh
+      mirroredBvhAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260313_001149_20260313_001155_392_3de7/motiongen_20260313_001149_v001.bvh
+      clipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260313_001149_20260313_001155_392_3de7\motiongen_20260313_001149_v001.anim
+      backendFilename: t2mgpt_generated_exact_v001_s1529167752.bvh
+      metaJson: '{"model": "T2M-GPT", "pipeline": "exact_recover_from_ric_to_momask_bvh",
+        "prompt": "A person does a forward roll.", "seed": 1529167752, "requested_fps":
+        20, "native_frame_count": 52, "native_joint_count": 22, "duration_seconds_request":
+        2.0, "batch_index": 0, "batch_count": 1, "resolved_seed": 1529167752, "seed_mode":
+        "random"}'
+      resolvedSeed: 1529167752
+      pathEditLockY: 1
+      pathEditKeys:
+      - id: 73279659c84746f6b44da6d945984668
+        time: 0
+        position: {x: -0.1061462, y: 0, z: -0.4293585}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+  - id: 20260312_231426_089_e17a
+    generationName: motiongen_20260312_231402
+    prompt: A person does a handstand.
+    exportDirectory: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+      Plugin Playground\MotionGenExports
+    mirrorDirectoryAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260312_231402_20260312_231426_089_e17a
+    createdAtUtc: 2026-03-12T23:14:26.1542063Z
+    versionCount: 3
+    usedRandomSeed: 1
+    baseSeed: 0
+    items:
+    - id: 5ee91e3ede0b4110b599b07739665af2
+      displayName: motiongen_20260312_231402_v001
+      clipName: motiongen_20260312_231402_v001
+      externalBvhPath: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+        Plugin Playground\MotionGenExports\motiongen_20260312_231402_v001.bvh
+      mirroredBvhAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260312_231402_20260312_231426_089_e17a/motiongen_20260312_231402_v001.bvh
+      clipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260312_231402_20260312_231426_089_e17a\motiongen_20260312_231402_v001.anim
+      backendFilename: t2mgpt_generated_exact_v001_s1951646380.bvh
+      metaJson: '{"model": "T2M-GPT", "pipeline": "exact_recover_from_ric_to_momask_bvh",
+        "prompt": "A person does a handstand.", "seed": 1951646380, "requested_fps":
+        20, "native_frame_count": 88, "native_joint_count": 22, "duration_seconds_request":
+        2.0, "batch_index": 0, "batch_count": 3, "resolved_seed": 1951646380, "seed_mode":
+        "random"}'
+      resolvedSeed: 1951646380
+      pathEditLockY: 1
+      pathEditKeys:
+      - id: 161235bacb4046c09595c446bce124cb
+        time: 0
+        position: {x: -0.016328221, y: 0, z: -0.045940462}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+    - id: 840e0e22dcb64b67bc9cd4c2436cd69c
+      displayName: motiongen_20260312_231402_v002
+      clipName: motiongen_20260312_231402_v002
+      externalBvhPath: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+        Plugin Playground\MotionGenExports\motiongen_20260312_231402_v002.bvh
+      mirroredBvhAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260312_231402_20260312_231426_089_e17a/motiongen_20260312_231402_v002.bvh
+      clipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260312_231402_20260312_231426_089_e17a\motiongen_20260312_231402_v002.anim
+      backendFilename: t2mgpt_generated_exact_v002_s1351996450.bvh
+      metaJson: '{"model": "T2M-GPT", "pipeline": "exact_recover_from_ric_to_momask_bvh",
+        "prompt": "A person does a handstand.", "seed": 1351996450, "requested_fps":
+        20, "native_frame_count": 88, "native_joint_count": 22, "duration_seconds_request":
+        2.0, "batch_index": 1, "batch_count": 3, "resolved_seed": 1351996450, "seed_mode":
+        "random"}'
+      resolvedSeed: 1351996450
+      pathEditLockY: 0
+      pathEditKeys:
+      - id: 872efb330cc94da4944fa4d9ba105c5d
+        time: 0
+        position: {x: 0, y: 2.1814048, z: -2.7367387}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+    - id: 35a610081b2e47a0be8aaad029b8f805
+      displayName: motiongen_20260312_231402_v003
+      clipName: motiongen_20260312_231402_v003
+      externalBvhPath: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+        Plugin Playground\MotionGenExports\motiongen_20260312_231402_v003.bvh
+      mirroredBvhAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260312_231402_20260312_231426_089_e17a/motiongen_20260312_231402_v003.bvh
+      clipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260312_231402_20260312_231426_089_e17a\motiongen_20260312_231402_v003.anim
+      backendFilename: t2mgpt_generated_exact_v003_s363180625.bvh
+      metaJson: '{"model": "T2M-GPT", "pipeline": "exact_recover_from_ric_to_momask_bvh",
+        "prompt": "A person does a handstand.", "seed": 363180625, "requested_fps":
+        20, "native_frame_count": 84, "native_joint_count": 22, "duration_seconds_request":
+        2.0, "batch_index": 2, "batch_count": 3, "resolved_seed": 363180625, "seed_mode":
+        "random"}'
+      resolvedSeed: 363180625
+      pathEditLockY: 0
+      pathEditKeys:
+      - id: 846a3e872fcf4112aa8becd777a7ad03
+        time: 0
+        position: {x: -0.042815685, y: 0, z: -4.0375824}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+      - id: 303ebef1b2414a5da0b771294812838d
+        time: 2.622
+        position: {x: -0.07577586, y: 0, z: -2.5166538}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+  - id: 20260312_231307_909_62f5
+    generationName: motiongen_20260312_231242
+    prompt: walk forward
+    exportDirectory: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+      Plugin Playground\MotionGenExports
+    mirrorDirectoryAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260312_231242_20260312_231307_909_62f5
+    createdAtUtc: 2026-03-12T23:13:08.0794792Z
+    versionCount: 1
+    usedRandomSeed: 1
+    baseSeed: 0
+    items:
+    - id: d62a50707d5247e8aedb146c83ec4e6e
+      displayName: motiongen_20260312_231242_v001
+      clipName: motiongen_20260312_231242_v001
+      externalBvhPath: C:\Users\jack\OneDrive\Desktop\Coding\Dissertation\Dissertation
+        Plugin Playground\MotionGenExports\motiongen_20260312_231242_v001.bvh
+      mirroredBvhAssetPath: Assets/MotionGen/Generated/Mirrored/motiongen_20260312_231242_20260312_231307_909_62f5/motiongen_20260312_231242_v001.bvh
+      clipAssetPath: Assets\MotionGen\Generated\Mirrored\motiongen_20260312_231242_20260312_231307_909_62f5\motiongen_20260312_231242_v001.anim
+      backendFilename: t2mgpt_generated_exact_v001_s1611490049.bvh
+      metaJson: '{"model": "T2M-GPT", "pipeline": "exact_recover_from_ric_to_momask_bvh",
+        "prompt": "walk forward", "seed": 1611490049, "requested_fps": 20, "native_frame_count":
+        84, "native_joint_count": 22, "duration_seconds_request": 2.0, "batch_index":
+        0, "batch_count": 1, "resolved_seed": 1611490049, "seed_mode": "random"}'
+      resolvedSeed: 1611490049
+      pathEditLockY: 1
+      pathEditKeys:
+      - id: 272997abf39c4e4fbff1a59284ab1a80
+        time: 0
+        position: {x: 0, y: 0, z: 0}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+      - id: 718c4ec0a50145428196a1ad22253d6d
+        time: 1.3833333
+        position: {x: 0, y: 0, z: 0}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+      - id: 6391e9763f964863ae238457e89526f5
+        time: 2.7666667
+        position: {x: 0, y: 0, z: 0}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
+      - id: 8ecffbd1747d4340bf476013b5c15908
+        time: 4.15
+        position: {x: 0, y: 0, z: 0}
+        rotation: {x: 0, y: 0, z: 0, w: 1}
